@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TMA SCENARIO GENERATOR</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+  :root {
+    --bg:#070d0d; --border:#1a3a2a; --green:#00ff88; --green-dim:#00a855;
+    --green-dk:#004422; --amber:#ffaa00; --red:#ff3344; --cyan:#00e8ff;
+    --text:#b0d8c0; --text-dim:#4a7a5a;
+    --mono:'Share Tech Mono',monospace; --head:'Rajdhani',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,.018) 2px,rgba(0,255,136,.018) 4px);}
+
+  /* ── header ── */
+  header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border);background:#050c0c;}
+  .hdr-title{font-family:var(--head);font-size:20px;font-weight:700;color:var(--green);letter-spacing:4px;text-shadow:0 0 12px rgba(0,255,136,.5);}
+  .hdr-sub{font-size:11px;color:var(--text-dim);letter-spacing:2px;margin-top:2px;}
+  .hdr-clock{font-size:22px;color:var(--amber);letter-spacing:2px;text-shadow:0 0 8px rgba(255,170,0,.4);}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);display:inline-block;margin-right:6px;animation:blink 1.4s ease-in-out infinite;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* ── layout ── */
+  .main{display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 53px);}
+
+  /* ── left panel ── */
+  .left-panel{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+  .section{border-bottom:1px solid var(--border);padding:14px 14px 12px;}
+  .section-title{font-family:var(--head);font-size:12px;font-weight:700;color:var(--green-dim);letter-spacing:3px;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+  .section-title::before{content:'';display:inline-block;width:12px;height:2px;background:var(--green-dim);}
+
+  /* sub-label inside a section (secondary grouping) */
+  .sub-label{font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(26,58,42,.5);}
+  .sub-label:first-child{margin-top:0;}
+
+  /* uniform field label */
+  label{display:block;font-size:10px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:3px;margin-top:0;}
+  /* field groups handle their own top spacing */
+  .fg{margin-top:8px;}
+  .fg:first-child{margin-top:0;}
+
+  input[type=number],input[type=text],select{width:100%;background:#0a1a12;border:1px solid var(--border);color:var(--green);font-family:var(--mono);font-size:13px;padding:5px 8px;outline:none;transition:border-color .2s;}
+  input:focus,select:focus{border-color:var(--green-dim);box-shadow:0 0 6px rgba(0,255,136,.15);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
+  /* row with label+input inside each cell */
+  .frow2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
+  .frow2:first-child,.frow3:first-child{margin-top:0;}
+  .frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;}
+
+  .contact-row{display:grid;grid-template-columns:1fr auto;align-items:center;background:#0d1e16;border:1px solid var(--border);padding:6px 8px;margin-bottom:4px;transition:border-color .15s;}
+  .contact-row:hover{border-color:var(--green-dim);}
+  .c-name{font-family:var(--head);font-weight:700;font-size:14px;letter-spacing:1px;}
+  .c-meta{font-size:10px;color:var(--text-dim);margin-top:2px;}
+  .del-btn{background:none;border:1px solid #3a1a1a;color:var(--red);font-family:var(--mono);font-size:10px;padding:2px 6px;cursor:pointer;}
+  .del-btn:hover{background:rgba(255,51,68,.1);}
+
+  /* list sub-header */
+  .list-header{font-size:9px;color:var(--text-dim);letter-spacing:2px;padding:6px 0 5px;border-top:1px solid rgba(26,58,42,.5);margin-top:10px;margin-bottom:4px;}
+
+  .btn{padding:7px 14px;font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;border:none;outline:none;transition:all .15s;}
+  .btn-green{background:var(--green-dk);border:1px solid var(--green-dim);color:var(--green);}
+  .btn-green:hover{background:rgba(0,255,136,.15);}
+  .btn-amber{background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.4);color:var(--amber);}
+  .btn-amber:hover{background:rgba(255,170,0,.15);}
+  .btn-red{background:rgba(255,51,68,.07);border:1px solid rgba(255,51,68,.35);color:var(--red);}
+  .btn-red:hover{background:rgba(255,51,68,.15);}
+  .btn-cyan{background:rgba(0,232,255,.07);border:1px solid rgba(0,232,255,.35);color:var(--cyan);}
+  .btn-cyan:hover{background:rgba(0,232,255,.15);}
+  .btn-full{width:100%;margin-top:10px;}
+
+  /* pos mode toggle */
+  .mode-toggle{display:flex;border:1px solid var(--border);overflow:hidden;margin-top:6px;}
+  .mode-btn{flex:1;padding:5px 6px;background:none;border:none;border-right:1px solid var(--border);cursor:pointer;font-family:var(--head);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text-dim);transition:all .15s;}
+  .mode-btn:last-child{border-right:none;}
+  .mode-btn.active{background:var(--green-dk);color:var(--green);}
+  .mode-btn:not(.active):hover{background:rgba(0,255,136,.06);color:var(--text);}
+  .pos-panel{display:none;margin-top:8px;}
+  .pos-panel.visible{display:block;}
+  .computed-pos{margin-top:6px;padding:5px 8px;background:rgba(0,232,255,.05);border:1px solid rgba(0,232,255,.15);font-size:10px;color:var(--cyan);letter-spacing:1px;}
+
+  /* ── maneuver section ── */
+  .mnv-time-toggle{display:flex;border:1px solid var(--border);overflow:hidden;margin-top:6px;}
+  .mnv-t-btn{flex:1;padding:5px 4px;background:none;border:none;border-right:1px solid var(--border);cursor:pointer;font-family:var(--head);font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--text-dim);transition:all .15s;}
+  .mnv-t-btn:last-child{border-right:none;}
+  .mnv-t-btn.active{background:rgba(255,170,0,.12);color:var(--amber);}
+  .mnv-t-btn:not(.active):hover{background:rgba(255,255,255,.04);color:var(--text);}
+  .mnv-t-btn-now.active{background:rgba(0,255,136,.12);color:var(--green);}
+
+  .mnv-panel{margin-top:8px;}
+
+  .mnv-now-box{padding:6px 8px;background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);font-size:11px;color:var(--green);font-family:var(--mono);letter-spacing:1px;}
+  .mnv-now-box.sim-inactive{background:rgba(255,170,0,.06);border-color:rgba(255,170,0,.25);color:var(--amber);}
+  .mnv-now-caption{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:4px;}
+
+  .mnv-row{
+    background:#0d1a12;border:1px solid var(--border);
+    padding:7px 8px;margin-bottom:4px;
+    display:grid;grid-template-columns:1fr auto;align-items:start;gap:6px;
+    border-left:3px solid var(--amber);
+    transition:border-color .15s;
+  }
+  .mnv-row:hover{border-color:rgba(255,170,0,.5);}
+  .mnv-label{font-family:var(--head);font-weight:700;font-size:12px;color:var(--amber);letter-spacing:1px;}
+  .mnv-meta{font-size:10px;color:var(--text-dim);margin-top:2px;line-height:1.5;}
+  .mnv-empty{font-size:10px;color:var(--text-dim);padding:4px 0;}
+
+  /* minimap maneuver marker */
+  .mnv-marker-amber{color:var(--amber);}
+
+  /* ── right panel ── */
+  .right-panel{display:flex;flex-direction:column;overflow:hidden;}
+  .out-tabs{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:#060d0c;}
+  .out-tab{padding:10px 22px;cursor:pointer;font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:2px;color:var(--text-dim);border:none;border-right:1px solid var(--border);border-bottom:2px solid transparent;outline:none;background:none;transition:all .15s;}
+  .out-tab.active-gen{color:var(--amber);border-bottom-color:var(--amber);background:rgba(255,170,0,.04);}
+  .out-tab.active-sim{color:var(--cyan);border-bottom-color:var(--cyan);background:rgba(0,232,255,.04);}
+  .out-tab:not(.active-gen):not(.active-sim):hover{color:var(--text);background:rgba(255,255,255,.03);}
+
+  .config-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;gap:12px;background:#090f0f;flex-wrap:wrap;}
+  .config-bar .field{flex:1;min-width:80px;}
+
+  .out-pane{display:none;flex:1;flex-direction:column;overflow:hidden;}
+  .out-pane.visible{display:flex;}
+
+  /* generar */
+  .output-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:#080e0e;}
+  .output-title{font-family:var(--head);font-weight:700;font-size:13px;color:var(--green-dim);letter-spacing:3px;}
+  .table-wrap{flex:1;overflow:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  thead th{background:#0a1812;color:var(--green-dim);font-family:var(--head);font-weight:700;font-size:11px;letter-spacing:2px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;}
+  tbody tr{border-bottom:1px solid rgba(26,58,42,.4);transition:background .1s;}
+  tbody tr:hover{background:rgba(0,255,136,.04);}
+  tbody tr.odd-grp{background:rgba(0,20,10,.3);}
+  tbody tr.even-grp{background:rgba(0,30,16,.2);}
+  tbody tr.mnv-row-tbl{background:rgba(255,170,0,.06)!important;border-left:2px solid var(--amber);}
+  td{padding:6px 12px;color:var(--text);}
+  td.t-time{color:var(--amber);font-size:11px;}
+  td.t-contact{font-family:var(--head);font-weight:700;font-size:13px;}
+  td.t-brg{color:var(--green);font-size:14px;font-weight:bold;text-shadow:0 0 8px rgba(0,255,136,.35);}
+  td.t-range{color:#88ccaa;}
+  td.t-bear-rate{color:#ccaa44;font-size:11px;}
+  td.t-pos{font-size:11px;color:var(--text-dim);}
+  td.t-mnv{font-size:10px;color:var(--amber);}
+  .export-section{padding:10px 16px;border-top:1px solid var(--border);background:#070e0d;display:flex;align-items:center;gap:10px;}
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-dim);gap:10px;}
+  .empty-icon{font-size:40px;opacity:.3;}
+
+  /* simular */
+  .sim-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:#060e0d;flex-wrap:wrap;gap:10px;}
+  .sim-clocks{display:flex;gap:28px;align-items:baseline;}
+  .sim-clock-block{display:flex;flex-direction:column;align-items:center;}
+  .sim-clock-label{font-size:9px;color:var(--text-dim);letter-spacing:2px;margin-bottom:2px;}
+  .sim-elapsed{font-size:36px;font-weight:bold;color:var(--cyan);text-shadow:0 0 16px rgba(0,232,255,.5);letter-spacing:3px;font-family:var(--mono);}
+  .sim-t-val{font-size:20px;letter-spacing:2px;}
+  .sim-progress-wrap{flex:1;min-width:180px;}
+  .sim-progress-label{font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;display:flex;justify-content:space-between;}
+  .sim-progress-bar{height:6px;background:#0a1a12;border:1px solid var(--border);}
+  .sim-progress-fill{height:100%;background:var(--cyan);transition:width .2s linear;width:0%;box-shadow:0 0 8px rgba(0,232,255,.4);}
+  .sim-status{display:inline-block;padding:2px 10px;font-family:var(--head);font-size:11px;font-weight:700;letter-spacing:2px;border:1px solid;}
+  .sim-status.idle{color:var(--text-dim);border-color:var(--border);}
+  .sim-status.running{color:var(--cyan);border-color:rgba(0,232,255,.4);animation:blink 1s infinite;}
+  .sim-status.paused{color:var(--amber);border-color:rgba(255,170,0,.4);}
+  .sim-status.done{color:var(--green);border-color:var(--green-dim);}
+
+  /* OS state banner in sim */
+  .os-state-bar{padding:6px 16px;border-bottom:1px solid var(--border);background:#090f0a;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+  .os-state-item{display:flex;flex-direction:column;align-items:center;}
+  .os-state-label{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;}
+  .os-state-val{font-family:var(--head);font-weight:700;font-size:16px;color:var(--green);}
+  .os-state-val.maneuvering{color:var(--amber);animation:blink .7s infinite;}
+  .os-mnv-indicator{padding:3px 10px;font-family:var(--head);font-size:11px;font-weight:700;letter-spacing:2px;border:1px solid rgba(255,170,0,.5);color:var(--amber);display:none;}
+  .os-mnv-indicator.active{display:block;animation:blink .7s infinite;}
+
+  /* CIC cards */
+  .sim-display{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;background:#070e0d;min-height:150px;}
+  .contact-card{flex:1;min-width:190px;border:1px solid var(--border);background:#0a1612;padding:10px 14px;transition:border-color .4s,box-shadow .4s;}
+  .contact-card.flash{border-color:var(--green);box-shadow:0 0 12px rgba(0,255,136,.2);}
+  .card-name{font-family:var(--head);font-weight:700;font-size:15px;letter-spacing:2px;margin-bottom:8px;}
+  .card-badge{display:inline-block;font-size:9px;padding:1px 5px;border:1px solid;letter-spacing:1px;margin-left:6px;vertical-align:middle;}
+  .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;}
+  .card-label{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;}
+  .card-val{font-family:var(--mono);line-height:1.1;}
+  .card-val.xl{font-size:30px;font-weight:bold;}
+  .card-val.lg{font-size:18px;font-weight:bold;}
+  .card-val.sm{font-size:11px;color:var(--text-dim);}
+  .card-brg{color:var(--green);text-shadow:0 0 10px rgba(0,255,136,.4);}
+  .card-dist{color:#88ccaa;}
+  .card-rate-pos{color:var(--amber);}
+  .card-rate-neg{color:#44aaff;}
+  .card-rate-zero{color:var(--text-dim);}
+
+  /* ── ASTERIX emit ── */
+  .btn-emit{background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.3);color:var(--green-dim);}
+  .btn-emit:hover{background:rgba(0,255,136,.12);}
+  .btn-emit.active{background:rgba(0,255,136,.18);border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(0,255,136,.25);animation:emit-pulse 1.2s ease-in-out infinite;}
+  @keyframes emit-pulse{0%,100%{box-shadow:0 0 6px rgba(0,255,136,.2)}50%{box-shadow:0 0 14px rgba(0,255,136,.5)}}
+  .emit-counter{font-size:10px;color:var(--text-dim);letter-spacing:1px;white-space:nowrap;margin-top:2px;text-align:center;}
+  .emit-counter.live{color:var(--green);}
+
+  .sim-log-header{padding:7px 16px;border-bottom:1px solid var(--border);background:#080e0e;display:flex;align-items:center;justify-content:space-between;}
+  .sim-log-title{font-family:var(--head);font-weight:700;font-size:12px;color:var(--text-dim);letter-spacing:3px;}
+  .sim-log-wrap{flex:1;overflow:auto;}
+
+  canvas{display:block;background:#040a08;}
+  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--green-dk);}
+  .note{font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.5;}
+  .badge-cyan{border:1px solid rgba(0,232,255,.3);color:var(--cyan);display:inline-block;padding:1px 5px;font-size:9px;letter-spacing:1px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hdr-title">⬡ TMA SCENARIO GENERATOR</div>
+    <div class="hdr-sub"><span class="status-dot"></span>GENERACIÓN / SIMULACIÓN DE ESCENARIOS TÁCTICOS</div>
+  </div>
+  <div class="hdr-clock" id="clk">--:--:-- UTC</div>
+</header>
+
+<div class="main">
+
+<!-- ══════════════ LEFT PANEL ══════════════ -->
+<div class="left-panel">
+
+  <!-- ── OWNSHIP ── -->
+  <div class="section">
+    <div class="section-title">OWNSHIP — ESTADO INICIAL</div>
+
+    <div class="sub-label">POSICIÓN</div>
+    <div class="frow2">
+      <div><label>LAT (°)</label><input type="number" id="os-lat" value="-12.000" step="0.001"></div>
+      <div><label>LON (°)</label><input type="number" id="os-lon" value="-77.200" step="0.001"></div>
+    </div>
+
+    <div class="sub-label">MOVIMIENTO</div>
+    <div class="frow3">
+      <div><label>HDG (°T)</label><input type="number" id="os-hdg" value="045" min="0" max="359.9" step="1"></div>
+      <div><label>SPD (kt)</label><input type="number" id="os-spd" value="10" min="0" step="0.5"></div>
+      <div><label>PROF (m)</label><input type="number" id="os-depth" value="0" step="10"></div>
+    </div>
+  </div>
+
+  <!-- ── MANIOBRAS ── -->
+  <div class="section">
+    <div class="section-title">MANIOBRAS DE OS</div>
+
+    <div class="sub-label">MOMENTO</div>
+    <div class="mnv-time-toggle">
+      <button class="mnv-t-btn active" id="mnv-t-btn-rel" onclick="setMnvTimeMode('rel')">T+min</button>
+      <button class="mnv-t-btn"        id="mnv-t-btn-utc" onclick="setMnvTimeMode('utc')">UTC</button>
+      <button class="mnv-t-btn mnv-t-btn-now" id="mnv-t-btn-now" onclick="setMnvTimeMode('now')">⚡ AHORA</button>
+    </div>
+
+    <!-- rel panel -->
+    <div class="mnv-panel" id="mnv-panel-rel">
+      <div class="frow2">
+        <div><label>T INICIO (min)</label><input type="number" id="mnv-t-rel" value="10" min="0" step="0.5"></div>
+        <div><label>TASA GIRO (°/min)</label><input type="number" id="mnv-rate" value="3" min="0.1" max="20" step="0.1"></div>
+      </div>
+    </div>
+
+    <!-- utc panel -->
+    <div class="mnv-panel" id="mnv-panel-utc" style="display:none">
+      <div class="frow2">
+        <div><label>T INICIO (UTC)</label><input type="text" id="mnv-t-utc" value="00:10:00" placeholder="HH:MM:SS"></div>
+        <div><label>TASA GIRO (°/min)</label><input type="number" id="mnv-rate-utc" value="3" min="0.1" max="20" step="0.1"></div>
+      </div>
+    </div>
+
+    <!-- now panel -->
+    <div class="mnv-panel" id="mnv-panel-now" style="display:none">
+      <div class="mnv-now-box"><span id="mnv-now-preview">—</span></div>
+      <div class="mnv-now-caption">T se captura al clicar AGREGAR</div>
+      <div class="frow2" style="margin-top:6px">
+        <div style="grid-column:1/-1"><label>TASA GIRO (°/min)</label><input type="number" id="mnv-rate-now" value="3" min="0.1" max="20" step="0.1"></div>
+      </div>
+    </div>
+
+    <div class="sub-label" style="margin-top:10px">ESTADO OBJETIVO</div>
+    <div class="frow3">
+      <div><label>HDG (°T)</label><input type="number" id="mnv-hdg" value="090" min="0" max="359.9" step="1"></div>
+      <div><label>SPD (kt)</label><input type="number" id="mnv-spd" value="10" min="0" step="0.5"></div>
+      <div><label>PROF (m)</label><input type="number" id="mnv-depth" value="0" step="10"></div>
+    </div>
+    <p class="note">Rumbo cambia a tasa °/min · SPD y PROF lineales.</p>
+
+    <button class="btn btn-amber btn-full" onclick="addManeuver()">+ AGREGAR MANIOBRA</button>
+
+    <div class="list-header">LISTA DE MANIOBRAS</div>
+    <div id="mnv-list"><p class="mnv-empty">Sin maniobras.</p></div>
+  </div>
+
+  <!-- ── CONTACTO ── -->
+  <div class="section">
+    <div class="section-title">AGREGAR CONTACTO</div>
+
+    <div class="sub-label">IDENTIFICACIÓN</div>
+    <div class="frow2">
+      <div><label>DESIGNACIÓN</label><input type="text" id="c-name" value="C01" maxlength="6" style="text-transform:uppercase"></div>
+      <div><label>TIPO</label>
+        <select id="c-type">
+          <option value="SKUNK">SKUNK (superficie)</option>
+          <option value="GOBLIN">GOBLIN (sub)</option>
+          <option value="BOGEY">BOGEY (aéreo)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sub-label" style="margin-top:10px">POSICIÓN INICIAL</div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-btn-latlon" onclick="setPosMode('latlon')">LAT / LON</button>
+      <button class="mode-btn"        id="mode-btn-brgdst" onclick="setPosMode('brgdst')">MRC + DIST</button>
+    </div>
+
+    <div class="pos-panel visible" id="panel-latlon">
+      <div class="frow2">
+        <div><label>LAT (°)</label><input type="number" id="c-lat" value="-11.800" step="0.001"></div>
+        <div><label>LON (°)</label><input type="number" id="c-lon" value="-77.100" step="0.001"></div>
+      </div>
+    </div>
+    <div class="pos-panel" id="panel-brgdst">
+      <div class="frow2">
+        <div><label>MRC (°T)</label><input type="number" id="c-brg-init" value="045" min="0" max="359.9" step="1" oninput="updateComputedPos()"></div>
+        <div><label>DIST (NM)</label><input type="number" id="c-dist-init" value="15" min="0.1" step="0.5" oninput="updateComputedPos()"></div>
+      </div>
+      <div class="computed-pos" id="computed-pos">— calcular —</div>
+    </div>
+
+    <div class="sub-label" style="margin-top:10px">MOVIMIENTO</div>
+    <div class="frow3">
+      <div><label>HDG (°T)</label><input type="number" id="c-hdg" value="210" min="0" max="359.9" step="1"></div>
+      <div><label>SPD (kt)</label><input type="number" id="c-spd" value="8" min="0" step="0.5"></div>
+      <div><label>PROF (m)</label><input type="number" id="c-depth" value="0" step="10"></div>
+    </div>
+
+    <button class="btn btn-green btn-full" onclick="addContact()">+ AGREGAR CONTACTO</button>
+  </div>
+
+  <!-- ── CONTACTOS ACTIVOS ── -->
+  <div class="section" style="flex:1">
+    <div class="section-title">CONTACTOS ACTIVOS</div>
+    <div id="contact-list"><p class="note">Sin contactos.</p></div>
+  </div>
+
+</div><!-- /left -->
+
+<!-- ══════════════ RIGHT PANEL ══════════════ -->
+<div class="right-panel">
+
+  <div class="out-tabs">
+    <button class="out-tab active-gen" id="tab-gen" onclick="setOutMode('gen')">▶ GENERAR</button>
+    <button class="out-tab"            id="tab-sim" onclick="setOutMode('sim')">◉ SIMULAR</button>
+    <div style="flex:1"></div>
+  </div>
+
+  <div class="config-bar">
+    <div class="field"><label>T₀ ESCENARIO (UTC)</label><input type="text" id="t0" value="00:00:00" placeholder="HH:MM:SS"></div>
+    <div class="field"><label>INTERVALO (min)</label><input type="number" id="interval" value="2" min="0.5" max="60" step="0.5"></div>
+    <div class="field"><label>DURACIÓN (min)</label><input type="number" id="duration" value="30" min="1" max="480" step="1"></div>
+    <div class="field" style="max-width:110px"><label>RUIDO (°σ)</label><input type="number" id="noise" value="0.0" min="0" max="10" step="0.1"></div>
+    <div id="gen-btn-wrap">
+      <label>&nbsp;</label>
+      <button class="btn btn-amber" onclick="generate()" style="padding:7px 20px">▶ GENERAR</button>
+    </div>
+    <div id="sim-btn-wrap" style="display:none">
+      <label>&nbsp;</label>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-cyan"  id="btn-sim-start" onclick="simStart()" style="padding:7px 16px">◉ INICIAR</button>
+        <button class="btn btn-amber" id="btn-sim-pause" onclick="simPause()" style="display:none;padding:7px 12px">⏸ PAUSA</button>
+        <button class="btn btn-red"   id="btn-sim-stop"  onclick="simStop()"  style="display:none;padding:7px 12px">■ DETENER</button>
+      </div>
+    </div>
+    <!-- ASTERIX emit toggle (sim mode only) -->
+    <div id="emit-btn-wrap" style="display:none">
+      <label>&nbsp;</label>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <button class="btn btn-emit" id="btn-emit" onclick="toggleEmit()" style="padding:6px 12px;letter-spacing:1px">
+          ⬡ EMITIR AL TMA
+        </button>
+        <div class="emit-counter" id="emit-counter">— msgs</div>
+      </div>
+    </div>
+    <div><label>&nbsp;</label><button class="btn btn-red" onclick="clearAll()" style="padding:7px 12px" title="Limpiar todo">✕</button></div>
+  </div>
+
+  <!-- ── GENERAR PANE ── -->
+  <div class="out-pane visible" id="pane-gen">
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div class="output-header">
+          <span class="output-title">LOG DE MARCACIONES</span>
+          <span id="out-summary" style="font-size:11px;color:var(--text-dim)"></span>
+        </div>
+        <div class="table-wrap">
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon">◎</div>
+            <div>Configure escenario y presione GENERAR</div>
+          </div>
+          <table id="brg-table" style="display:none">
+            <thead><tr>
+              <th>T (UTC)</th><th>CONTACTO</th><th>MRC (°T)</th>
+              <th>DIST (NM)</th><th>ṁ (°/min)</th><th>POS CONTACTO</th><th>POS OS / ESTADO</th>
+            </tr></thead>
+            <tbody id="tbl-body"></tbody>
+          </table>
+        </div>
+        <div class="export-section">
+          <button class="btn btn-green" onclick="exportTXT()">↓ TXT</button>
+          <button class="btn btn-green" onclick="exportCSV()">↓ CSV</button>
+          <span id="export-note" style="font-size:10px;color:var(--text-dim)"></span>
+        </div>
+      </div>
+      <div style="width:260px;border-left:1px solid var(--border);display:flex;flex-direction:column">
+        <div class="output-header"><span class="output-title">CARTA</span></div>
+        <canvas id="minimap" style="flex:1;width:260px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SIMULAR PANE ── -->
+  <div class="out-pane" id="pane-sim">
+
+    <div class="sim-header">
+      <div class="sim-clocks">
+        <div class="sim-clock-block">
+          <div class="sim-clock-label">TIEMPO SIMULADO</div>
+          <div class="sim-elapsed" id="sim-elapsed">00:00</div>
+        </div>
+        <div class="sim-clock-block">
+          <div class="sim-clock-label">HORA LOCAL</div>
+          <div class="sim-t-val" style="color:var(--amber)" id="sim-local">--:--:--</div>
+        </div>
+        <div class="sim-clock-block">
+          <div class="sim-clock-label">T ESCENARIO</div>
+          <div class="sim-t-val" style="color:var(--green)" id="sim-t-esc">--:--:--</div>
+        </div>
+      </div>
+      <div class="sim-progress-wrap">
+        <div class="sim-progress-label">
+          <span id="sim-pct">0%</span>
+          <span><span id="sim-cur">0.0</span> / <span id="sim-tot">--</span> min</span>
+        </div>
+        <div class="sim-progress-bar"><div class="sim-progress-fill" id="sim-fill"></div></div>
+      </div>
+      <span class="sim-status idle" id="sim-badge">IDLE</span>
+    </div>
+
+    <!-- OS live state bar -->
+    <div class="os-state-bar" id="os-state-bar">
+      <div class="os-state-item"><div class="os-state-label">OS HDG</div><div class="os-state-val" id="os-live-hdg">---°T</div></div>
+      <div class="os-state-item"><div class="os-state-label">OS SPD</div><div class="os-state-val" id="os-live-spd">-- kt</div></div>
+      <div class="os-state-item"><div class="os-state-label">OS PROF</div><div class="os-state-val" id="os-live-dep">-- m</div></div>
+      <div class="os-state-item"><div class="os-state-label">OS POS</div><div class="os-state-val" id="os-live-pos" style="font-size:12px">--</div></div>
+      <div class="os-mnv-indicator" id="os-mnv-ind">⚡ MANIOBRA</div>
+    </div>
+
+    <div class="sim-display" id="sim-cards">
+      <div class="empty-state" style="width:100%;padding:16px 0">
+        <div class="empty-icon">◎</div><div>Configure contactos e INICIAR</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div class="sim-log-header">
+          <span class="sim-log-title">LOG ACUMULATIVO (por intervalo)</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-green" onclick="exportSimTXT()" style="padding:4px 10px;font-size:11px">↓ TXT</button>
+            <button class="btn btn-green" onclick="exportSimCSV()" style="padding:4px 10px;font-size:11px">↓ CSV</button>
+          </div>
+        </div>
+        <div class="sim-log-wrap">
+          <table>
+            <thead><tr>
+              <th>T ESC (UTC)</th><th>CONTACTO</th><th>MRC (°T)</th>
+              <th>DIST (NM)</th><th>ṁ (°/min)</th><th>POS CONTACTO</th><th>POS OS</th>
+            </tr></thead>
+            <tbody id="sim-log-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div style="width:260px;border-left:1px solid var(--border);display:flex;flex-direction:column">
+        <div class="sim-log-header"><span class="sim-log-title">CARTA TÁCTICA</span></div>
+        <canvas id="minimap-sim" style="flex:1;width:260px"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /right -->
+</div><!-- /main -->
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  CLOCK
+// ════════════════════════════════════════════════════════════
+function tickClock(){
+  const n=new Date();
+  document.getElementById('clk').textContent=n.toISOString().substr(11,8)+' UTC';
+  document.getElementById('sim-local').textContent=n.toTimeString().substr(0,8);
+}
+setInterval(tickClock,1000); tickClock();
+
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let contacts=[], maneuvers=[], generatedRows=[], simLogRows=[];
+const COLORS=['#00e8ff','#ffcc00','#ff6644','#cc88ff','#44ffaa','#ff44aa'];
+let colorIdx=0, outMode='gen', posMode='latlon', mnvTimeMode='rel';
+
+let simTimer=null, simRunning=false, simPaused=false;
+let simStartWall=null, simElapsedMs=0, simDurationMs=0;
+let simPrevBrg={}, simPrevBrgT={}, simLastLogMin=-Infinity;
+let simLastEmitMs = -Infinity;   // wall-clock del último emit (ms)
+const EMIT_INTERVAL_MS = 10000; // emitir al TMA cada 10 segundos reales
+
+// ════════════════════════════════════════════════════════════
+//  GEO
+// ════════════════════════════════════════════════════════════
+const R_NM=3440.065;
+function toRad(d){return d*Math.PI/180;}
+function toDeg(r){return r*180/Math.PI;}
+
+function distNM(la1,lo1,la2,lo2){
+  const dL=toRad(la2-la1),dl=toRad(lo2-lo1);
+  const a=Math.sin(dL/2)**2+Math.cos(toRad(la1))*Math.cos(toRad(la2))*Math.sin(dl/2)**2;
+  return 2*R_NM*Math.asin(Math.sqrt(a));
+}
+function bearing(la1,lo1,la2,lo2){
+  const dl=toRad(lo2-lo1);
+  const y=Math.sin(dl)*Math.cos(toRad(la2));
+  const x=Math.cos(toRad(la1))*Math.sin(toRad(la2))-Math.sin(toRad(la1))*Math.cos(toRad(la2))*Math.cos(dl);
+  return(toDeg(Math.atan2(y,x))+360)%360;
+}
+// propagate a single step (constant heading & speed)
+function propStep(lat,lon,hdg,spd_kt,dt_min){
+  const d=spd_kt*(dt_min/60)/R_NM, cr=toRad(hdg), lr=toRad(lat);
+  const lat2=Math.asin(Math.sin(lr)*Math.cos(d)+Math.cos(lr)*Math.sin(d)*Math.cos(cr));
+  const lon2=toRad(lon)+Math.atan2(Math.sin(cr)*Math.sin(d)*Math.cos(lr),Math.cos(d)-Math.sin(lr)*Math.sin(lat2));
+  return{lat:toDeg(lat2),lon:toDeg(lon2)};
+}
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+// ════════════════════════════════════════════════════════════
+//  OS STATE ENGINE  ← core new logic
+//  Returns {lat, lon, hdg, spd, depth, maneuvering} at dt_min
+//  Integrates maneuvers with gradual HDG/SPD/depth change.
+//  Integration sub-step: 0.1 min for accuracy during maneuvers.
+// ════════════════════════════════════════════════════════════
+function osStateAt(dt_min){
+  const t0s=parseHMS(document.getElementById('t0').value);
+
+  // build sorted maneuver list with tMin (minutes from T0)
+  const mnvs=maneuvers.map(m=>{
+    let tMin;
+    if(m.timeMode==='rel') tMin=m.tRel;
+    else tMin=(parseHMS(m.tUTC)-t0s)/60;
+    return{...m, tMin};
+  }).sort((a,b)=>a.tMin-b.tMin);
+
+  // initial OS state
+  let lat=+document.getElementById('os-lat').value;
+  let lon=+document.getElementById('os-lon').value;
+  let hdg=+document.getElementById('os-hdg').value;
+  let spd=+document.getElementById('os-spd').value;
+  let dep=+document.getElementById('os-depth').value;
+  let maneuvering=false;
+
+  // integrate from t=0 to t=dt_min using sub-steps
+  const SUB=0.05; // sub-step minutes (3 sec) - fine enough for display
+  let t=0;
+
+  // active maneuver state
+  let activeMnv=null;    // current maneuver being executed
+  let mnvIdx=0;          // next maneuver to start
+
+  while(t<dt_min){
+    const step=Math.min(SUB, dt_min-t);
+
+    // check if a new maneuver starts at this moment
+    while(mnvIdx<mnvs.length && mnvs[mnvIdx].tMin<=t+1e-9){
+      activeMnv={
+        ...mnvs[mnvIdx],
+        startHdg:hdg, startSpd:spd, startDep:dep,
+        startT:t
+      };
+      mnvIdx++;
+    }
+
+    if(activeMnv){
+      // compute how far into the maneuver we are
+      const elapsed=t-activeMnv.startT;
+      const tgtHdg=activeMnv.hdg, tgtSpd=activeMnv.spd, tgtDep=activeMnv.depth;
+      const rate=activeMnv.rate; // °/min
+
+      // heading: turn at rate °/min, shortest path
+      let dHdg=tgtHdg-activeMnv.startHdg;
+      if(dHdg>180) dHdg-=360; if(dHdg<-180) dHdg+=360;
+      const hdgDuration=Math.abs(dHdg)/rate; // min to complete turn
+
+      // speed/depth: change linearly, same duration as turn (or 1 min if no turn)
+      const transDur=Math.max(hdgDuration, 1);
+
+      if(elapsed>=hdgDuration) hdg=tgtHdg;
+      else hdg=(activeMnv.startHdg+Math.sign(dHdg)*rate*elapsed+360)%360;
+
+      const f=Math.min(1, elapsed/transDur);
+      spd=activeMnv.startSpd+(tgtSpd-activeMnv.startSpd)*f;
+      dep=activeMnv.startDep+(tgtDep-activeMnv.startDep)*f;
+
+      maneuvering=(elapsed<transDur);
+      if(elapsed>=transDur) activeMnv=null; // maneuver complete
+    } else {
+      maneuvering=false;
+    }
+
+    const p=propStep(lat,lon,hdg,spd,step);
+    lat=p.lat; lon=p.lon;
+    t+=step;
+  }
+  return{lat,lon,hdg,spd,depth:dep,maneuvering};
+}
+
+// ════════════════════════════════════════════════════════════
+//  TIME UTILS
+// ════════════════════════════════════════════════════════════
+function parseHMS(s){const p=s.split(':').map(Number);return(p[0]||0)*3600+(p[1]||0)*60+(p[2]||0);}
+function secToHMS(s){s=((s%86400)+86400)%86400;return`${p2(Math.floor(s/3600))}:${p2(Math.floor((s%3600)/60))}:${p2(Math.floor(s%60))}`;}
+function p2(n){return String(n).padStart(2,'0');}
+function fmtElapsed(ms){const t=Math.floor(ms/1000);return`${p2(Math.floor(t/60))}:${p2(t%60)}`;}
+
+// ════════════════════════════════════════════════════════════
+//  UI MODES
+// ════════════════════════════════════════════════════════════
+function setOutMode(mode){
+  outMode=mode;
+  document.getElementById('tab-gen').className='out-tab'+(mode==='gen'?' active-gen':'');
+  document.getElementById('tab-sim').className='out-tab'+(mode==='sim'?' active-sim':'');
+  document.getElementById('pane-gen').classList.toggle('visible',mode==='gen');
+  document.getElementById('pane-sim').classList.toggle('visible',mode==='sim');
+  document.getElementById('gen-btn-wrap').style.display=mode==='gen'?'':'none';
+  document.getElementById('sim-btn-wrap').style.display=mode==='sim'?'':'none';
+  document.getElementById('emit-btn-wrap').style.display=mode==='sim'?'':'none';
+}
+function setPosMode(mode){
+  posMode=mode;
+  document.getElementById('mode-btn-latlon').classList.toggle('active',mode==='latlon');
+  document.getElementById('mode-btn-brgdst').classList.toggle('active',mode==='brgdst');
+  document.getElementById('panel-latlon').classList.toggle('visible',mode==='latlon');
+  document.getElementById('panel-brgdst').classList.toggle('visible',mode==='brgdst');
+  if(mode==='brgdst') updateComputedPos();
+}
+function setMnvTimeMode(mode){
+  mnvTimeMode=mode;
+  document.getElementById('mnv-t-btn-rel').classList.toggle('active',mode==='rel');
+  document.getElementById('mnv-t-btn-utc').classList.toggle('active',mode==='utc');
+  document.getElementById('mnv-t-btn-now').classList.toggle('active',mode==='now');
+  document.getElementById('mnv-panel-rel').style.display=mode==='rel'?'':'none';
+  document.getElementById('mnv-panel-utc').style.display=mode==='utc'?'':'none';
+  document.getElementById('mnv-panel-now').style.display=mode==='now'?'':'none';
+  if(mode==='now') updateNowPreview();
+}
+
+// update the "AHORA" preview box with current sim time (or warn if not running)
+function updateNowPreview(){
+  if(mnvTimeMode!=='now') return;
+  const box=document.getElementById('mnv-now-preview');
+  const boxWrap=box.parentElement;
+  if(simRunning&&!simPaused){
+    const totalMs=simElapsedMs+(Date.now()-simStartWall);
+    const dt_min=totalMs/60000;
+    const t0s=parseHMS(document.getElementById('t0').value);
+    box.textContent=`T+${dt_min.toFixed(2)} min  (${secToHMS(t0s+dt_min*60)} UTC)`;
+    boxWrap.className='mnv-now-box';
+  } else {
+    box.textContent=simRunning&&simPaused
+      ? `T+${(simElapsedMs/60000).toFixed(2)} min (pausada)`
+      : 'Simulación no activa — se usará T=0';
+    boxWrap.className='mnv-now-box sim-inactive';
+  }
+}
+// keep preview ticking while 'now' mode is visible
+setInterval(()=>{ if(mnvTimeMode==='now') updateNowPreview(); }, 200);
+
+function contactLL(){
+  return propStep(+document.getElementById('os-lat').value,+document.getElementById('os-lon').value,
+    +document.getElementById('c-brg-init').value,+document.getElementById('c-dist-init').value*60,1);
+}
+function updateComputedPos(){
+  const p=contactLL();
+  document.getElementById('computed-pos').textContent=`→  LAT ${p.lat.toFixed(4)}°   LON ${p.lon.toFixed(4)}°`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  MANEUVERS
+// ════════════════════════════════════════════════════════════
+let mnvCounter=1;
+function addManeuver(){
+  const timeMode=mnvTimeMode;
+  let tRel, tUTC, label, rate;
+
+  if(timeMode==='rel'){
+    rate=+document.getElementById('mnv-rate').value;
+    tRel=+document.getElementById('mnv-t-rel').value;
+    tUTC=null;
+    label=`T+${tRel} min`;
+
+  } else if(timeMode==='utc'){
+    rate=+document.getElementById('mnv-rate-utc').value;
+    tUTC=document.getElementById('mnv-t-utc').value;
+    const t0s=parseHMS(document.getElementById('t0').value);
+    tRel=(parseHMS(tUTC)-t0s)/60;
+    label=`${tUTC} UTC`;
+
+  } else { // 'now' — capture exact sim time at click
+    rate=+document.getElementById('mnv-rate-now').value;
+    if(simRunning&&!simPaused){
+      const totalMs=simElapsedMs+(Date.now()-simStartWall);
+      tRel=totalMs/60000;
+    } else if(simRunning&&simPaused){
+      tRel=simElapsedMs/60000;
+    } else {
+      tRel=0; // sim not started — T=0
+    }
+    const t0s=parseHMS(document.getElementById('t0').value);
+    tUTC=secToHMS(t0s+tRel*60);
+    label=`AHORA T+${tRel.toFixed(2)} min`;
+  }
+
+  const hdg=+document.getElementById('mnv-hdg').value;
+  const spd=+document.getElementById('mnv-spd').value;
+  const depth=+document.getElementById('mnv-depth').value;
+
+  maneuvers.push({id:mnvCounter++, timeMode, tRel, tUTC, rate, hdg, spd, depth, label});
+  maneuvers.sort((a,b)=>a.tRel-b.tRel);
+  renderManeuverList();
+}
+function removeManeuver(id){
+  maneuvers=maneuvers.filter(m=>m.id!==id);
+  renderManeuverList();
+}
+function renderManeuverList(){
+  const el=document.getElementById('mnv-list');
+  if(!maneuvers.length){el.innerHTML='<p class="mnv-empty">Sin maniobras.</p>';return;}
+  el.innerHTML=maneuvers.map(m=>{
+    const nowTag=m.timeMode==='now'
+      ?`<span style="background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.3);color:var(--green);font-size:9px;padding:1px 5px;letter-spacing:1px;margin-left:4px">⚡AHORA</span>`
+      :'';
+    return`<div class="mnv-row">
+      <div>
+        <div class="mnv-label">MNV #${m.id} ${nowTag}&nbsp;<span style="font-size:10px;color:var(--text-dim)">${m.label}</span></div>
+        <div class="mnv-meta">
+          HDG ${String(m.hdg).padStart(3,'0')}°T &nbsp;|&nbsp; ${m.spd} kt &nbsp;|&nbsp; ${m.depth} m<br>
+          Tasa: ${m.rate}°/min
+        </div>
+      </div>
+      <button class="del-btn" onclick="removeManeuver(${m.id})">DEL</button>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+//  CONTACTS
+// ════════════════════════════════════════════════════════════
+function addContact(){
+  const name=document.getElementById('c-name').value.trim().toUpperCase()||'C01';
+  if(contacts.find(c=>c.name===name)){alert('Designación ya existe.');return;}
+  let lat,lon,initLabel;
+  if(posMode==='brgdst'){
+    const p=contactLL(); lat=p.lat; lon=p.lon;
+    const brg=+document.getElementById('c-brg-init').value, dist=+document.getElementById('c-dist-init').value;
+    initLabel=`${String(brg).padStart(3,'0')}°T / ${dist} NM`;
+  } else {
+    lat=+document.getElementById('c-lat').value; lon=+document.getElementById('c-lon').value;
+    initLabel=`${lat.toFixed(3)}°, ${lon.toFixed(3)}°`;
+  }
+  contacts.push({name,type:document.getElementById('c-type').value,lat,lon,
+    hdg:+document.getElementById('c-hdg').value,spd:+document.getElementById('c-spd').value,
+    depth:+document.getElementById('c-depth').value,initLabel,color:COLORS[colorIdx%COLORS.length]});
+  colorIdx++;
+  renderContactList();
+  const m=name.match(/^([A-Z]+)(\d+)$/);
+  if(m) document.getElementById('c-name').value=m[1]+String(+m[2]+1).padStart(2,'0');
+}
+function removeContact(name){contacts=contacts.filter(c=>c.name!==name);renderContactList();}
+function renderContactList(){
+  const el=document.getElementById('contact-list');
+  if(!contacts.length){el.innerHTML='<p class="note">Sin contactos.</p>';return;}
+  el.innerHTML=contacts.map(c=>`<div class="contact-row">
+    <div><div class="c-name" style="color:${c.color}">${c.name} <span class="badge-cyan">${c.type}</span></div>
+    <div class="c-meta">${c.initLabel} | HDG ${String(c.hdg).padStart(3,'0')}°T | ${c.spd} kt</div></div>
+    <button class="del-btn" onclick="removeContact('${c.name}')">DEL</button>
+  </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+//  SNAPSHOT  — uses osStateAt() instead of simple propagate
+// ════════════════════════════════════════════════════════════
+function snapshot(dt_min, noise){
+  const os=osStateAt(dt_min);
+  return contacts.map(c=>{
+    const cPos=propStep(c.lat,c.lon,c.hdg,c.spd,dt_min);
+    const dist=distNM(os.lat,os.lon,cPos.lat,cPos.lon);
+    let brg=bearing(os.lat,os.lon,cPos.lat,cPos.lon);
+    if(noise>0) brg=(brg+noise*randn()+360)%360;
+    return{contact:c.name,cColor:c.color,brg,dist,
+           cLat:cPos.lat,cLon:cPos.lon,
+           osLat:os.lat,osLon:os.lon,
+           osHdg:os.hdg,osSpd:os.spd,osDep:os.depth,
+           maneuvering:os.maneuvering};
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  GENERAR
+// ════════════════════════════════════════════════════════════
+function generate(){
+  if(!contacts.length){alert('Agregue al menos un contacto.');return;}
+  const t0s=parseHMS(document.getElementById('t0').value);
+  const intv=+document.getElementById('interval').value;
+  const dur=+document.getElementById('duration').value;
+  const noise=+document.getElementById('noise').value;
+  const steps=Math.floor(dur/intv)+1;
+  generatedRows=[];
+  const prev={};
+  for(let i=0;i<steps;i++){
+    const dt=i*intv, tStr=secToHMS(t0s+dt*60);
+    snapshot(dt,noise).forEach(s=>{
+      let brgRate=null;
+      if(prev[s.contact]!==undefined){
+        let d=s.brg-prev[s.contact]; if(d>180)d-=360; if(d<-180)d+=360;
+        brgRate=d/intv;
+      }
+      prev[s.contact]=s.brg;
+      generatedRows.push({t:tStr,dt,...s,brgRate});
+    });
+  }
+  renderGenTable();
+  drawMinimap('minimap',generatedRows);
+  document.getElementById('out-summary').textContent=`${steps} obs × ${contacts.length} ctct = ${generatedRows.length} registros`;
+}
+
+function renderGenTable(){
+  const tbody=document.getElementById('tbl-body');
+  const grpT=[...new Set(generatedRows.map(r=>r.t))], gi={};
+  grpT.forEach((t,i)=>gi[t]=i);
+  tbody.innerHTML=generatedRows.map(r=>{
+    const cls=(r.maneuvering?'mnv-row-tbl ':'')+( gi[r.t]%2===0?'even-grp':'odd-grp');
+    const mnvTag=r.maneuvering?'<span style="color:var(--amber);font-size:9px"> ⚡MNV</span>':'';
+    return`<tr class="${cls}">
+      <td class="t-time">${r.t}</td>
+      <td class="t-contact" style="color:${r.cColor}">${r.contact}</td>
+      <td class="t-brg">${fmtB(r.brg)}</td>
+      <td class="t-range">${r.dist.toFixed(2)}</td>
+      <td class="t-bear-rate">${brgRateHTML(r.brgRate)}</td>
+      <td class="t-pos">${r.cLat.toFixed(3)}, ${r.cLon.toFixed(3)}</td>
+      <td class="t-pos">${r.osLat.toFixed(3)}, ${r.osLon.toFixed(3)}<br>
+        <span style="color:var(--green-dim)">${String(Math.round(r.osHdg)).padStart(3,'0')}°T ${r.osSpd.toFixed(1)}kt</span>${mnvTag}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('brg-table').style.display='';
+}
+
+// ════════════════════════════════════════════════════════════
+//  SIMULAR
+// ════════════════════════════════════════════════════════════
+function simStart(){
+  if(!contacts.length){alert('Agregue al menos un contacto.');return;}
+  if(simPaused){
+    simStartWall=Date.now(); simPaused=false;
+    setSimStatus('running'); showSimBtns('running'); simLoop(); return;
+  }
+  simLogRows=[]; simPrevBrg={}; simPrevBrgT={}; simLastLogMin=-Infinity; simLastEmitMs=-Infinity;
+  simElapsedMs=0; simDurationMs=+document.getElementById('duration').value*60000;
+  simStartWall=Date.now(); simRunning=true; simPaused=false;
+  document.getElementById('sim-log-body').innerHTML='';
+  resetEmitCounter();
+  setSimStatus('running'); showSimBtns('running');
+  simLoop();
+}
+function simPause(){
+  if(!simRunning||simPaused) return;
+  simElapsedMs+=Date.now()-simStartWall; simPaused=true;
+  if(simTimer) clearTimeout(simTimer);
+  setSimStatus('paused'); showSimBtns('paused');
+}
+function simStop(){
+  if(simTimer) clearTimeout(simTimer);
+  simRunning=false; simPaused=false;
+  setSimStatus('done'); showSimBtns('done');
+}
+function simLoop(){
+  if(!simRunning||simPaused) return;
+  const totalMs=simElapsedMs+(Date.now()-simStartWall);
+  if(totalMs>=simDurationMs){tickSim(simDurationMs/60000,simDurationMs);simStop();return;}
+  tickSim(totalMs/60000,totalMs);
+  simTimer=setTimeout(simLoop,100);
+}
+
+function tickSim(dt_min,totalMs){
+  const noise=+document.getElementById('noise').value;
+  const t0s=parseHMS(document.getElementById('t0').value);
+  const tEsc=secToHMS(t0s+dt_min*60);
+  const dur=+document.getElementById('duration').value;
+  const pct=Math.min(100,totalMs/simDurationMs*100);
+
+  document.getElementById('sim-elapsed').textContent=fmtElapsed(totalMs);
+  document.getElementById('sim-t-esc').textContent=tEsc;
+  document.getElementById('sim-fill').style.width=pct+'%';
+  document.getElementById('sim-pct').textContent=pct.toFixed(0)+'%';
+  document.getElementById('sim-cur').textContent=dt_min.toFixed(1);
+  document.getElementById('sim-tot').textContent=dur;
+
+  const os=osStateAt(dt_min);
+
+  // update OS live state bar
+  const mnvInd=document.getElementById('os-mnv-ind');
+  document.getElementById('os-live-hdg').textContent=String(Math.round(os.hdg)).padStart(3,'0')+'°T';
+  document.getElementById('os-live-spd').textContent=os.spd.toFixed(1)+' kt';
+  document.getElementById('os-live-dep').textContent=os.depth.toFixed(0)+' m';
+  document.getElementById('os-live-pos').textContent=`${os.lat.toFixed(4)}°, ${os.lon.toFixed(4)}°`;
+  ['os-live-hdg','os-live-spd','os-live-dep'].forEach(id=>{
+    document.getElementById(id).className='os-state-val'+(os.maneuvering?' maneuvering':'');
+  });
+  mnvInd.className='os-mnv-indicator'+(os.maneuvering?' active':'');
+
+  // continuous cards + continuous emit (tick level)
+  const snap=snapshot(dt_min,noise).map(s=>{
+    let brgRate=null;
+    const pt=simPrevBrgT[s.contact], pb=simPrevBrg[s.contact];
+    if(pt!==undefined&&pb!==undefined&&dt_min>pt){
+      let d=s.brg-pb; if(d>180)d-=360; if(d<-180)d+=360;
+      brgRate=d/(dt_min-pt);
+    }
+    simPrevBrg[s.contact]=s.brg; simPrevBrgT[s.contact]=dt_min;
+    return{...s,brgRate};
+  });
+  renderSimCards(snap);
+  // emit al TMA cada EMIT_INTERVAL_MS segundos reales (no en cada tick)
+  const nowMs = Date.now();
+  if(nowMs - simLastEmitMs >= EMIT_INTERVAL_MS){
+    simLastEmitMs = nowMs;
+    snap.forEach(s => emitASTERIX({...s, t:tEsc}));
+  }
+
+  // log at interval marks
+  const intv=+document.getElementById('interval').value;
+  const mark=Math.floor(dt_min/intv)*intv;
+  if(mark>simLastLogMin&&dt_min>=mark){
+    simLastLogMin=mark;
+    const logSnap=snapshot(mark,noise);
+    logSnap.forEach(s=>{
+      const tLog=secToHMS(t0s+mark*60);
+      let brgRate=null;
+      const prevRow=simLogRows.slice().reverse().find(r=>r.contact===s.contact);
+      if(prevRow){
+        let d=s.brg-prevRow.brg; if(d>180)d-=360; if(d<-180)d+=360;
+        brgRate=d/(mark-prevRow.logMin);
+      }
+      const row={t:tLog,logMin:mark,...s,brgRate};
+      simLogRows.push(row);
+      prependLogRow(row);
+    });
+    drawMinimap('minimap-sim',simLogRows);
+  }
+}
+
+function renderSimCards(snap){
+  const el=document.getElementById('sim-cards');
+  if(!snap.length) return;
+  el.innerHTML=snap.map(s=>{
+    const c=contacts.find(cc=>cc.name===s.contact)||{};
+    const rc=s.brgRate===null?'card-rate-zero':s.brgRate>0?'card-rate-pos':'card-rate-neg';
+    const rv=s.brgRate===null?'—':(s.brgRate>0?'+':'')+s.brgRate.toFixed(3)+'°/min';
+    return`<div class="contact-card">
+      <div class="card-name" style="color:${s.cColor}">${s.contact}
+        <span class="card-badge" style="border-color:${s.cColor}55;color:${s.cColor}">${c.type||''}</span>
+      </div>
+      <div class="card-grid">
+        <div><div class="card-label">MRC (°T)</div><div class="card-val xl card-brg">${fmtB(s.brg)}</div></div>
+        <div><div class="card-label">DIST (NM)</div><div class="card-val lg card-dist">${s.dist.toFixed(2)}</div></div>
+        <div><div class="card-label">TASA (°/min)</div><div class="card-val lg ${rc}">${rv}</div></div>
+        <div><div class="card-label">POS CONTACTO</div><div class="card-val sm">${s.cLat.toFixed(4)}°<br>${s.cLon.toFixed(4)}°</div></div>
+        <div style="grid-column:1/-1"><div class="card-label">POS OS</div><div class="card-val sm">${s.osLat.toFixed(4)}°, ${s.osLon.toFixed(4)}°</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function prependLogRow(r){
+  const tbody=document.getElementById('sim-log-body');
+  const tr=document.createElement('tr');
+  if(r.maneuvering) tr.classList.add('mnv-row-tbl');
+  tr.innerHTML=`
+    <td class="t-time">${r.t}${r.maneuvering?'<span style="color:var(--amber);margin-left:4px;font-size:9px">⚡</span>':''}</td>
+    <td class="t-contact" style="color:${r.cColor}">${r.contact}</td>
+    <td class="t-brg">${fmtB(r.brg)}</td>
+    <td class="t-range">${r.dist.toFixed(2)}</td>
+    <td class="t-bear-rate">${brgRateHTML(r.brgRate)}</td>
+    <td class="t-pos">${r.cLat.toFixed(3)}, ${r.cLon.toFixed(3)}</td>
+    <td class="t-pos">${r.osLat.toFixed(3)}, ${r.osLon.toFixed(3)}</td>`;
+  tbody.prepend(tr);
+  tr.style.background='rgba(0,232,255,.14)';
+  setTimeout(()=>tr.style.background='',900);
+}
+
+function showSimBtns(state){
+  const s=document.getElementById('btn-sim-start');
+  const p=document.getElementById('btn-sim-pause');
+  const x=document.getElementById('btn-sim-stop');
+  if(state==='running'){s.style.display='none';p.style.display='';x.style.display='';p.textContent='⏸ PAUSA';}
+  else if(state==='paused'){s.style.display='none';p.style.display='';x.style.display='';p.textContent='▶ REANUDAR';}
+  else{s.style.display='';p.style.display='none';x.style.display='none';}
+}
+function setSimStatus(s){
+  const el=document.getElementById('sim-badge');
+  el.className='sim-status '+s;
+  el.textContent={idle:'IDLE',running:'EN CURSO',paused:'PAUSADA',done:'FINALIZADA'}[s]||s;
+}
+
+// ════════════════════════════════════════════════════════════
+//  MINIMAP — marks maneuver points on OS track
+// ════════════════════════════════════════════════════════════
+function drawMinimap(id,rows){
+  const cv=document.getElementById(id);
+  const rc=cv.getBoundingClientRect();
+  cv.width=rc.width||260; cv.height=rc.height||280;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
+  ctx.fillStyle='#040a08'; ctx.fillRect(0,0,W,H);
+  if(!rows||!rows.length) return;
+
+  const aLat=rows.flatMap(r=>[r.cLat,r.osLat]), aLon=rows.flatMap(r=>[r.cLon,r.osLon]);
+  const mnLat=Math.min(...aLat),mxLat=Math.max(...aLat);
+  const mnLon=Math.min(...aLon),mxLon=Math.max(...aLon);
+  const pad=28;
+  const sx=(W-2*pad)/(mxLon-mnLon||.001), sy=(H-2*pad)/(mxLat-mnLat||.001);
+  const sc=Math.min(sx,sy);
+  const cx=(W-(mxLon-mnLon)*sc)/2, cy=(H-(mxLat-mnLat)*sc)/2;
+  function px(la,lo){return{x:cx+(lo-mnLon)*sc,y:cy+(mxLat-la)*sc};}
+
+  // grid
+  ctx.strokeStyle='rgba(0,80,40,.3)'; ctx.lineWidth=.5;
+  for(let i=0;i<=4;i++){
+    const x=pad+(W-2*pad)*i/4,y=pad+(H-2*pad)*i/4;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+  }
+
+  // contact tracks
+  contacts.forEach(c=>{
+    const cr=rows.filter(r=>r.contact===c.name); if(!cr.length) return;
+    ctx.beginPath(); cr.forEach((r,i)=>{const p=px(r.cLat,r.cLon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});
+    ctx.strokeStyle=c.color; ctx.lineWidth=1.5; ctx.stroke();
+    cr.forEach((r,i)=>{const p=px(r.cLat,r.cLon);ctx.beginPath();ctx.arc(p.x,p.y,i===0?4:2,0,Math.PI*2);ctx.fillStyle=i===0?c.color:c.color+'88';ctx.fill();});
+    const p0=px(cr[0].cLat,cr[0].cLon); ctx.fillStyle=c.color; ctx.font='bold 11px Rajdhani,sans-serif'; ctx.fillText(c.name,p0.x+4,p0.y-4);
+  });
+
+  // OS track
+  const osT=[...new Map(rows.map(r=>[r.t,r])).values()];
+  ctx.beginPath(); osT.forEach((r,i)=>{const p=px(r.osLat,r.osLon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});
+  ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+  osT.forEach((r,i)=>{const p=px(r.osLat,r.osLon);ctx.beginPath();ctx.arc(p.x,p.y,i===0?5:2,0,Math.PI*2);ctx.fillStyle=i===0?'#fff':'rgba(255,255,255,.4)';ctx.fill();});
+  if(osT.length){const p=px(osT[0].osLat,osT[0].osLon);ctx.fillStyle='#fff';ctx.font='bold 11px Rajdhani,sans-serif';ctx.fillText('OS',p.x+4,p.y-4);}
+
+  // maneuver markers on OS track (find rows near each maneuver time)
+  const t0s=parseHMS(document.getElementById('t0').value);
+  maneuvers.forEach(m=>{
+    const tMin=m.timeMode==='rel'?m.tRel:(parseHMS(m.tUTC)-t0s)/60;
+    const tStr=secToHMS(t0s+tMin*60);
+    const row=rows.find(r=>r.t===tStr)||(rows.find(r=>r.dt!==undefined&&Math.abs(r.dt-tMin)<0.3));
+    if(!row) return;
+    const p=px(row.osLat,row.osLon);
+    ctx.beginPath(); ctx.arc(p.x,p.y,7,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,170,0,.8)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='var(--amber)'; ctx.font='bold 9px Rajdhani,sans-serif';
+    ctx.fillText('MNV',p.x-10,p.y-9);
+  });
+
+  // bearing lines
+  const last={}; rows.forEach(r=>{last[r.contact]=r;});
+  Object.values(last).forEach(r=>{
+    const c=contacts.find(cc=>cc.name===r.contact);
+    const p1=px(r.osLat,r.osLon),p2=px(r.cLat,r.cLon);
+    ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);
+    ctx.strokeStyle=(c?.color||'#00ff88')+'55';ctx.lineWidth=.8;ctx.setLineDash([3,4]);ctx.stroke();ctx.setLineDash([]);
+  });
+
+  // scale bar
+  const nmPx=1/(sc/60), barNM=Math.pow(10,Math.floor(Math.log10(W/sc*60/3)));
+  const barPx=barNM/nmPx;
+  ctx.fillStyle='rgba(0,255,136,.7)';ctx.fillRect(W-pad-barPx,H-16,barPx,3);
+  ctx.fillStyle='#88cc99';ctx.font='10px Share Tech Mono,monospace';ctx.fillText(`${barNM} NM`,W-pad-barPx,H-20);
+}
+
+// ════════════════════════════════════════════════════════════
+//  HELPERS & EXPORT
+// ════════════════════════════════════════════════════════════
+function fmtB(b){return b.toFixed(1).padStart(5,'0')+'°';}
+function brgRateHTML(r){
+  if(r===null) return '<span style="color:#2a5a3a">—</span>';
+  return`<span style="color:${r>0?'#ffaa00':'#44aaff'}">${r>0?'+':''}${r.toFixed(3)}</span>`;
+}
+
+function buildTXT(label,rows){
+  const t0s=parseHMS(document.getElementById('t0').value);
+  let o=`TMA SCENARIO GENERATOR — ${label}\n`+'='.repeat(70)+'\n';
+  o+=`OS: HDG ${document.getElementById('os-hdg').value}°T  SPD ${document.getElementById('os-spd').value} kt\n`;
+  if(maneuvers.length){
+    o+='MANIOBRAS OS:\n';
+    maneuvers.forEach(m=>{
+      const tMin=m.timeMode==='rel'?m.tRel:(parseHMS(m.tUTC)-t0s)/60;
+      o+=`  T+${tMin.toFixed(1)}min → HDG${String(m.hdg).padStart(3,'0')}°T ${m.spd}kt ${m.depth}m @ ${m.rate}°/min\n`;
+    });
+  }
+  o+=`T0: ${document.getElementById('t0').value} UTC   INT: ${document.getElementById('interval').value} min   DUR: ${document.getElementById('duration').value} min\n`;
+  o+='='.repeat(70)+'\nT(UTC)     CTCT   MRC(°T)    DIST(NM)     BEAR_RATE\n'+'-'.repeat(60)+'\n';
+  rows.forEach(r=>{
+    const br=r.brgRate!==null?r.brgRate.toFixed(3)+'°/min':'—';
+    const mnv=r.maneuvering?' [MNV]':'';
+    o+=`${r.t.padEnd(11)}${r.contact.padEnd(7)}${fmtB(r.brg).padEnd(11)}${r.dist.toFixed(3).padEnd(13)}${br}${mnv}\n`;
+  });
+  return o;
+}
+function buildCSV(rows){
+  return 'T_UTC,CONTACTO,MRC_degT,DIST_NM,BEAR_RATE_deg_min,CLAT,CLON,OSLAT,OSLON,OS_HDG,OS_SPD,MANEUVERING\n'+
+    rows.map(r=>`${r.t},${r.contact},${r.brg.toFixed(2)},${r.dist.toFixed(4)},${r.brgRate!==null?r.brgRate.toFixed(4):''},${r.cLat.toFixed(5)},${r.cLon.toFixed(5)},${r.osLat.toFixed(5)},${r.osLon.toFixed(5)},${r.osHdg.toFixed(1)},${r.osSpd.toFixed(2)},${r.maneuvering?1:0}`).join('\n');
+}
+function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();}
+function exportTXT(){if(!generatedRows.length){alert('Genere datos primero.');return;}dl('tma_gen.txt',buildTXT('MODO GENERAR',generatedRows),'text/plain');document.getElementById('export-note').textContent='Exportado.';}
+function exportCSV(){if(!generatedRows.length){alert('Genere datos primero.');return;}dl('tma_gen.csv',buildCSV(generatedRows),'text/csv');document.getElementById('export-note').textContent='CSV exportado.';}
+function exportSimTXT(){if(!simLogRows.length){alert('Sin datos simulados.');return;}dl('tma_sim.txt',buildTXT('MODO SIMULAR',simLogRows),'text/plain');}
+function exportSimCSV(){if(!simLogRows.length){alert('Sin datos simulados.');return;}dl('tma_sim.csv',buildCSV(simLogRows),'text/csv');}
+
+// ════════════════════════════════════════════════════════════
+//  ASTERIX Cat 238 — EMIT ENGINE
+// ════════════════════════════════════════════════════════════
+const tmaChannel = (() => {
+  try { return new BroadcastChannel('tma_feed'); }
+  catch(e){ return null; } // Safari fallback
+})();
+
+const LS_KEY   = 'tma_feed_log';
+const LS_MAX   = 500;   // max records in localStorage ring buffer
+let emitActive = false;
+let emitCount  = 0;
+
+// track ID map: designación → numeric ID (stable across session)
+const trackIdMap = {};
+let trackIdSeq = 1;
+function trackId(name){
+  if(!trackIdMap[name]) trackIdMap[name]=trackIdSeq++;
+  return trackIdMap[name];
+}
+
+/**
+ * Build and publish one ASTERIX-238-inspired observation record.
+ * row must have: {t, contact, cColor, brg, dist, brgRate,
+ *                 cLat, cLon, osLat, osLon, osHdg, osSpd,
+ *                 maneuvering, logMin?}
+ */
+function emitASTERIX(row){
+  if(!emitActive) return;
+
+  const msg = {
+    // ── BroadcastChannel routing ────────────────
+    type:        'bearing',
+
+    // ── Cat 238 header ─────────────────────────
+    cat:         238,
+    ver:         '1.0',
+    ts_utc:      row.t,                        // I238/070 — time of observation
+    ts_epoch_ms: Date.now(),
+
+    // ── Track identity ─────────────────────────
+    track_num:   trackId(row.contact),         // I238/010 — track number
+    track_label: row.contact,                  // human label (C01…)
+    track_type:  (contacts.find(c=>c.name===row.contact)||{}).type || '',
+
+    // ── Measured data ──────────────────────────
+    bearing_degT: +row.brg.toFixed(2),         // I238/030 — measured bearing °T
+    range_nm:     +row.dist.toFixed(4),        // I238/040 — slant range NM
+    bearing_rate: row.brgRate !== null
+                    ? +row.brgRate.toFixed(4)
+                    : null,                    // I238/050 — °/min
+
+    // ── Contact position (truth — not available to tracker) ──
+    contact_lat:  +row.cLat.toFixed(6),
+    contact_lon:  +row.cLon.toFixed(6),
+
+    // ── OS state at observation ────────────────
+    os_lat:       +row.osLat.toFixed(6),
+    os_lon:       +row.osLon.toFixed(6),
+    os_hdg_degT:  +row.osHdg.toFixed(1),
+    os_spd_kt:    +row.osSpd.toFixed(2),
+    os_maneuvering: row.maneuvering ? 1 : 0,
+
+    // ── Scenario metadata ─────────────────────
+    scenario_t0:  document.getElementById('t0').value,
+    noise_sigma:  +document.getElementById('noise').value,
+  };
+
+  // 1) BroadcastChannel
+  if(tmaChannel){
+    try{ tmaChannel.postMessage(msg); } catch(e){}
+  }
+
+  // 2) localStorage ring buffer
+  try{
+    let log = JSON.parse(localStorage.getItem(LS_KEY)||'[]');
+    log.push(msg);
+    if(log.length > LS_MAX) log = log.slice(log.length - LS_MAX);
+    localStorage.setItem(LS_KEY, JSON.stringify(log));
+  } catch(e){}
+
+  // 3) update counter
+  emitCount++;
+  const el = document.getElementById('emit-counter');
+  if(el){
+    el.textContent = `${emitCount} msgs`;
+    el.className = 'emit-counter live';
+  }
+}
+
+function toggleEmit(){
+  emitActive = !emitActive;
+  const btn = document.getElementById('btn-emit');
+  btn.classList.toggle('active', emitActive);
+  btn.textContent = emitActive ? '⬡ EMITIENDO…' : '⬡ EMITIR AL TMA';
+  if(!emitActive){
+    const el=document.getElementById('emit-counter');
+    if(el) el.className='emit-counter';
+  }
+}
+
+function resetEmitCounter(){
+  emitCount = 0;
+  const el=document.getElementById('emit-counter');
+  if(el){ el.textContent='— msgs'; el.className='emit-counter'; }
+}
+
+function clearAll(){
+  if(simRunning) simStop();
+  generatedRows=[];simLogRows=[];
+  document.getElementById('tbl-body').innerHTML='';
+  document.getElementById('brg-table').style.display='none';
+  document.getElementById('empty-state').style.display='';
+  document.getElementById('out-summary').textContent='';
+  document.getElementById('export-note').textContent='';
+  document.getElementById('sim-log-body').innerHTML='';
+  document.getElementById('sim-elapsed').textContent='00:00';
+  document.getElementById('sim-t-esc').textContent='--:--:--';
+  document.getElementById('sim-fill').style.width='0%';
+  document.getElementById('sim-pct').textContent='0%';
+  document.getElementById('sim-cur').textContent='0.0';
+  setSimStatus('idle');
+  resetEmitCounter();
+  if(emitActive) toggleEmit(); // turn off if was on
+  ['minimap','minimap-sim'].forEach(id=>{const c=document.getElementById(id);if(c.width){const x=c.getContext('2d');x.fillStyle='#040a08';x.fillRect(0,0,c.width,c.height);}});
+}
+
+window.addEventListener('resize',()=>{
+  if(generatedRows.length) drawMinimap('minimap',generatedRows);
+  if(simLogRows.length) drawMinimap('minimap-sim',simLogRows);
+});
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  setOutMode('gen');
+  addContact();
+  setPosMode('brgdst');
+  document.getElementById('c-name').value='C02';
+  document.getElementById('c-brg-init').value='280';
+  document.getElementById('c-dist-init').value='12';
+  document.getElementById('c-hdg').value='120';
+  document.getElementById('c-spd').value='12';
+  updateComputedPos();
+  addContact();
+  setPosMode('latlon');
+  // demo maneuver
+  document.getElementById('mnv-t-rel').value='10';
+  document.getElementById('mnv-hdg').value='120';
+  document.getElementById('mnv-spd').value='8';
+  document.getElementById('mnv-rate').value='3';
+  addManeuver();
+});
+</script>
+</body>
+</html>

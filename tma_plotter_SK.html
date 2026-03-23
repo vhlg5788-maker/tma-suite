@@ -1,0 +1,3532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TMA PLOTTER — SK v1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+:root {
+  --bg:       #020d08;
+  --green:    #00ff7f;
+  --gdim:     #007a3d;
+  --gmid:     #00c060;
+  --amber:    #ffb300;
+  --red:      #ff4444;
+  --blue:     #00cfff;
+  --pbg:      #030f09;
+  --pbr:      #0d3d20;
+  --text:     #a0ffc8;
+  --tdim:     #3a7a55;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;height:100vh;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+
+/* HEADER */
+header{background:var(--pbg);border-bottom:1px solid var(--gdim);padding:5px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+header h1{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;color:var(--green);letter-spacing:3px;}
+.hstats{display:flex;gap:16px;font-size:10px;color:var(--tdim);}
+.hval{color:var(--green);font-family:'Share Tech Mono',monospace;font-weight:400;}
+#clock{color:var(--amber);font-size:11px;}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden;min-height:0;}
+
+/* LEFT PANEL */
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--pbr);flex-shrink:0;}
+.tab{flex:1;padding:7px 4px;font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:2px;text-align:center;cursor:pointer;color:var(--tdim);border-right:1px solid var(--pbr);transition:all .15s;}
+.tab:last-child{border-right:none;}
+.tab.active{color:var(--green);background:#040f08;border-bottom:2px solid var(--green);}
+.tab:hover:not(.active){color:var(--text);}
+
+.tab-content{flex:1;overflow-y:auto;padding:10px;display:none;flex-direction:column;gap:8px;}
+.tab-content.active{display:flex;}
+
+/* BOXES */
+.pbox{background:#040f08;border:1px solid var(--pbr);padding:9px;}
+.ptitle{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:3px;color:var(--gdim);border-bottom:1px solid var(--pbr);padding-bottom:3px;margin-bottom:7px;}
+
+label{font-size:10px;color:var(--tdim);display:block;margin-bottom:3px;margin-top:0;line-height:1.3;}
+
+input[type="number"],input[type="text"],select{
+  width:100%;background:#010a04;border:1px solid var(--gdim);
+  color:var(--green);font-family:'Share Tech Mono';font-size:12px;
+  padding:4px 6px;outline:none;height:26px;box-sizing:border-box;
+}
+input:focus,select:focus{border-color:var(--green);box-shadow:0 0 5px #00ff7f22;}
+select option{background:#010a04;}
+
+/* Columnas de formulario — siempre alineadas por la parte inferior del label */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:end;}
+/* Celda de formulario: label arriba, input abajo — altura uniforme */
+.fc{display:flex;flex-direction:column;justify-content:flex-end;}
+.fc label{margin-bottom:3px;}
+
+.btn{width:100%;margin-top:6px;padding:6px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:all .15s;}
+.btn:hover{background:var(--green);color:var(--bg);}
+.btn.red{border-color:var(--red);color:var(--red);}
+.btn.red:hover{background:var(--red);color:#fff;}
+.btn.amber{border-color:var(--amber);color:var(--amber);}
+.btn.amber:hover{background:var(--amber);color:var(--bg);}
+.btn.sm{margin-top:3px;font-size:8px;padding:4px;}
+.btn.now-active{background:var(--amber);color:var(--bg);border-color:var(--amber);animation:pulse-now 1.2s ease-in-out infinite;}
+@keyframes pulse-now{0%,100%{box-shadow:0 0 4px var(--amber);}50%{box-shadow:0 0 10px var(--amber);}}
+
+/* OWNSHIP TRACK TABLE */
+.os-table{font-size:10px;width:100%;}
+.os-table .row{display:grid;grid-template-columns:40px 50px 50px 24px;gap:3px;padding:2px 0;border-bottom:1px solid #0a2a18;align-items:center;}
+.os-table .row.hdr{color:var(--tdim);font-size:9px;}
+.os-table .del{color:var(--red);cursor:pointer;text-align:center;}
+
+/* CONTACT SELECTOR */
+.csel-wrap{display:flex;gap:5px;align-items:center;}
+.csel-wrap select{flex:1;}
+.csel-add,.csel-del{width:28px;height:28px;background:transparent;border:1px solid var(--gdim);color:var(--gdim);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.csel-add:hover{border-color:var(--green);color:var(--green);}
+.csel-del:hover{border-color:var(--red);color:var(--red);}
+
+/* BEARING LIST */
+.blist{max-height:130px;overflow-y:auto;font-size:10px;}
+.bitem{display:flex;justify-content:space-between;align-items:center;padding:2px 3px;border-bottom:1px solid #0a2a18;}
+.bitem:hover{background:#081a10;}
+.bitem .x{color:var(--red);cursor:pointer;padding:0 3px;}
+
+/* SOLUTION CONTROL */
+.crs-big{font-family:'Orbitron',sans-serif;font-size:30px;font-weight:900;color:var(--amber);text-align:center;padding:5px 0;text-shadow:0 0 10px #ffb30077;}
+input[type="range"]{width:100%;margin:4px 0;-webkit-appearance:none;height:4px;background:var(--pbr);outline:none;border:none;padding:0;}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 0 6px #ffb30099;}
+
+/* RESIDUAL */
+.res-bar-wrap{background:#010a04;border:1px solid var(--pbr);height:10px;margin-top:4px;position:relative;overflow:hidden;}
+.res-bar{height:100%;width:0%;transition:width .1s,background .3s;}
+.res-lbl{position:absolute;top:0;right:3px;font-size:8px;line-height:10px;color:var(--tdim);}
+
+/* RESULTS */
+.rline{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid #0a1a10;}
+.rv{color:var(--amber);}
+.rv.g{color:var(--green);}
+.rv.b{color:var(--blue);}
+
+/* CANVAS */
+.cwrap{flex:1;position:relative;overflow:hidden;min-width:0;}
+canvas{position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;display:block;}
+
+/* TOOLBAR */
+.toolbar{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:5px;z-index:10;pointer-events:all;}
+.tbtn{width:32px;height:32px;background:#030f09dd;border:1px solid var(--gdim);color:var(--gdim);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.tbtn:hover{border-color:var(--green);color:var(--green);}
+
+/* LEFT PANEL — must be above canvas */
+.lp{width:280px;min-width:280px;background:var(--pbg);border-right:1px solid var(--pbr);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:5;}
+
+/* LEGEND */
+.legend{position:absolute;bottom:10px;right:10px;background:#030f09cc;border:1px solid var(--pbr);padding:6px 10px;font-size:9px;z-index:10;max-width:160px;}
+.legend-item{display:flex;align-items:center;gap:6px;padding:1px 0;}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+#tooltip{position:absolute;background:#030f09ee;border:1px solid var(--gdim);color:var(--text);font-size:10px;padding:2px 7px;pointer-events:none;display:none;z-index:20;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--gdim);}
+.help{font-size:9px;color:var(--tdim);line-height:1.6;margin-top:3px;}
+/* MODE SWITCHER — ahora 3 modos */
+.mode-sw{display:flex;border:1px solid var(--pbr);margin-bottom:6px;}
+.msw{flex:1;padding:6px 2px;font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px;text-align:center;cursor:pointer;color:var(--tdim);border-right:1px solid var(--pbr);transition:all .15s;}
+.msw:last-child{border-right:none;}
+.msw.active{color:var(--bg);background:var(--amber);}
+.msw.active.k{background:var(--blue);}
+.msw:hover:not(.active){color:var(--amber);}
+
+/* kf rows */
+.kf-row{display:flex;justify-content:space-between;font-size:10px;padding:2px 0;border-bottom:1px solid #0a1a10;}
+.kf-val{color:var(--blue);font-family:'Share Tech Mono',monospace;font-weight:400;}
+.innov-bar-wrap{background:#010a04;border:1px solid var(--pbr);height:10px;margin-top:4px;position:relative;overflow:hidden;}
+.innov-bar{height:100%;width:0%;background:var(--blue);transition:width .15s;}
+.innov-lbl{position:absolute;top:0;right:3px;font-size:8px;line-height:10px;color:var(--tdim);}
+
+/* LS STATUS */
+.ls-status{font-size:10px;padding:4px 6px;border:1px solid var(--pbr);margin-top:5px;min-height:28px;color:var(--tdim);}
+.ls-status.ok{border-color:var(--green);color:var(--green);}
+.ls-status.err{border-color:var(--red);color:var(--red);}
+.ls-status.run{border-color:var(--amber);color:var(--amber);}
+
+/* PANEL VISIBILIDAD CONTACTOS */
+.vis-panel{position:absolute;top:10px;left:10px;display:flex;flex-wrap:wrap;gap:4px;z-index:10;max-width:200px;}
+.vbtn{padding:3px 8px;background:#030f09cc;border:1px solid var(--gdim);color:var(--tdim);font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;transition:all .15s;border-radius:2px;}
+.vbtn.on{border-color:var(--green);color:var(--green);background:#030f09ee;}
+.vbtn:hover{border-color:var(--text);color:var(--text);}
+
+/* ALERTA IMM MANIOBRA */
+.imm-alert{position:absolute;bottom:52px;left:10px;background:#030f09ee;border:1px solid var(--amber);padding:5px 10px;font-size:10px;z-index:12;display:none;align-items:center;gap:8px;max-width:260px;}
+.imm-alert.visible{display:flex;}
+.imm-alert-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+.imm-alert-txt{color:var(--amber);flex:1;line-height:1.4;}
+.imm-alert-btn{padding:3px 7px;background:transparent;border:1px solid var(--amber);color:var(--amber);font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.imm-alert-btn:hover{background:var(--amber);color:var(--bg);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TMA PLOTTER // SK v1 — MULTI-CONTACTO</h1>
+  <div class="hstats">
+    <div>OS: <span class="hval" id="h-os">000°/0kn</span></div>
+    <div>CONTACTOS: <span class="hval" id="h-nc">0</span></div>
+    <div>ACTIVO: <span class="hval" id="h-ac">—</span></div>
+    <div>RESID: <span class="hval" id="h-res">—</span></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-size:9px;color:var(--tdim);letter-spacing:1px;">TIEMPO SESIÓN</div>
+      <div id="session-elapsed" style="font-size:13px;color:var(--amber);font-family:'Orbitron',sans-serif;min-width:60px;">00:00</div>
+    </div>
+    <div style="text-align:right;">
+      <div id="clock-local" style="font-size:11px;color:var(--green);font-family:'Share Tech Mono',monospace;">--:--:--L</div>
+      <div id="clock" style="font-size:9px;color:var(--tdim);font-family:'Share Tech Mono',monospace;">--:--:--Z</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+<div class="lp">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tab-os"   onclick="showTab('os')">OWNSHIP</div>
+    <div class="tab"        id="tab-brg"  onclick="showTab('brg')">MARCACIÓN</div>
+    <div class="tab"        id="tab-sol"  onclick="showTab('sol')">SOLUCIÓN</div>
+  </div>
+
+  <!-- TAB: OWNSHIP -->
+  <div class="tab-content active" id="tc-os">
+    <div class="pbox">
+      <div class="ptitle">▸ TRAMOS DE OWNSHIP</div>
+      <div class="help">Cada tramo define rumbo/vel desde ese tiempo en adelante.</div>
+      <div style="display:flex;gap:4px;margin-top:6px;margin-bottom:4px;">
+        <button class="btn sm" id="btn-os-now-toggle" onclick="toggleOsNow()"
+          style="flex:0 0 auto;width:auto;padding:4px 8px;font-size:9px;white-space:nowrap;"
+          disabled>◉ AHORA</button>
+        <div id="os-now-hint" style="font-size:9px;color:var(--tdim);align-self:center;display:none;">
+          El tiempo se captura al agregar
+        </div>
+      </div>
+      <div class="row3" style="margin-top:8px;">
+        <div class="fc"><label>T INICIO (MM:SS)</label><input type="text" id="os-t" value="00:00" placeholder="MM:SS" oninput="" onchange=""></div>
+        <div class="fc"><label>RUMBO (°V)</label><input type="number" id="os-h" value="000" min="0" max="359"></div>
+        <div class="fc"><label>VEL (kn)</label><input type="number" id="os-v" value="10" min="0" step="0.5"></div>
+      </div>
+      <button class="btn" onclick="addOSLeg()">+ AGREGAR TRAMO</button>
+      <div id="os-err" class="ls-status err" style="display:none;margin-top:4px;"></div>
+    </div>
+    <div class="pbox">
+      <div class="ptitle">▸ TRACK OWNSHIP</div>
+      <div class="os-table">
+        <div class="row hdr"><span>T (MM:SS)</span><span>RUMBO</span><span>VEL</span><span></span></div>
+        <div id="os-list"></div>
+      </div>
+      <button class="btn red sm" onclick="clearOSLegs()">✕ LIMPIAR TRAMOS</button>
+    </div>
+    <div class="pbox">
+      <div class="ptitle">▸ DEMOSTRACIONES</div>
+      <button class="btn sm" onclick="loadDemo(1)" style="margin-top:4px">D1 — Sin maniobras</button>
+      <button class="btn sm" onclick="loadDemo(2)" style="margin-top:4px">D2 — OS maniobra (zig)</button>
+      <button class="btn sm amber" onclick="loadDemo(3)" style="margin-top:4px">D3 — Contacto cambia rumbo</button>
+      <button class="btn sm amber" onclick="loadDemo(4)" style="margin-top:4px">D4 — Contacto cambia velocidad</button>
+      <button class="btn sm amber" onclick="loadDemo(5)" style="margin-top:4px">D5 — Contacto cambia rumbo y vel</button>
+      <button class="btn sm" style="border-color:var(--blue);color:var(--blue);margin-top:4px" onclick="loadDemo(6)">D6 — Multi-contacto</button>
+      <div id="demo-desc" class="help" style="margin-top:6px;border:1px solid var(--pbr);padding:5px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- TAB: MARCACIÓN -->
+  <div class="tab-content" id="tc-brg">
+    <div class="pbox">
+      <div class="ptitle">▸ CONTACTO ACTIVO</div>
+      <div class="csel-wrap">
+        <select id="contact-sel" onchange="selectContact(this.value)"></select>
+        <button class="csel-add" onclick="addContact()" title="Nuevo contacto">+</button>
+        <button class="csel-del" onclick="deleteContact()" title="Eliminar contacto">×</button>
+      </div>
+      <div id="contact-color-bar" style="height:3px;margin-top:4px;background:var(--gdim);transition:background .2s;"></div>
+    </div>
+    <div class="pbox">
+      <div class="ptitle">▸ NUEVA MARCACIÓN</div>
+      <div style="display:flex;gap:4px;margin-bottom:6px;">
+        <button class="btn sm" id="btn-brg-now-toggle" onclick="toggleBrgNow()"
+          style="flex:0 0 auto;width:auto;padding:4px 8px;font-size:9px;white-space:nowrap;"
+          disabled>◉ AHORA</button>
+        <div id="brg-now-hint" style="font-size:9px;color:var(--tdim);align-self:center;display:none;">
+          El tiempo se captura al agregar
+        </div>
+      </div>
+      <div class="row2">
+        <div class="fc">
+          <label>TIEMPO (MM:SS)</label>
+          <input type="text" id="b-t" value="00:00" placeholder="MM:SS"
+            oninput="onBrgTimeInput()" onchange="onBrgTimeInput()">
+        </div>
+        <div class="fc">
+          <label id="brg-mode-label">MARCACIÓN °V</label>
+          <div style="display:flex;gap:3px;">
+            <input type="number" id="b-v" value="045" min="0" max="359" step="0.5" style="flex:1;min-width:0;">
+            <button id="btn-brg-mode" onclick="toggleBrgMode()"
+              style="flex:0 0 auto;height:26px;padding:0 7px;font-size:9px;white-space:nowrap;
+                     background:transparent;border:1px solid var(--green);color:var(--green);
+                     font-family:'Orbitron',sans-serif;cursor:pointer;letter-spacing:1px;">°V</button>
+          </div>
+        </div>
+      </div>
+      <div class="help" id="os-at-t">OS en T=0: 000°V / 10kn</div>
+      <button class="btn" onclick="addBearing()">+ AGREGAR MARCACIÓN</button>
+      <div id="brg-err" class="ls-status err" style="display:none;margin-top:4px;"></div>
+    </div>
+    <div class="pbox">
+      <div class="ptitle">▸ MARCACIONES <span id="brg-count" style="color:var(--amber)">0</span></div>
+      <div class="blist" id="blist"></div>
+      <button class="btn red sm" onclick="clearBearings()">✕ LIMPIAR MARCACIONES</button>
+    </div>
+  </div>
+
+  <!-- TAB: SOLUCIÓN -->
+  <div class="tab-content" id="tc-sol">
+    <div class="pbox">
+      <div class="ptitle">▸ CONTACTO</div>
+      <div class="csel-wrap">
+        <select id="sol-sel" onchange="selectContact(this.value)"></select>
+      </div>
+      <div id="sol-color-bar" style="height:3px;margin-top:4px;background:var(--gdim);transition:background .2s;"></div>
+    </div>
+
+    <!-- MODO SWITCHER: 2 modos -->
+    <div class="mode-sw">
+      <div class="msw active" id="msw-s" onclick="setSolMode('S')">SOLUCIÓN  S</div>
+      <div class="msw"        id="msw-k" onclick="setSolMode('K')">TIEMPO REAL  K</div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- MODO S: Solución (LS automático + ajuste manual)       -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div id="mode-s-controls">
+
+      <!-- Velocidad -->
+      <div class="pbox">
+        <div class="ptitle">▸ VELOCIDAD CONTACTO (kn)</div>
+        <input type="number" id="sol-spd" value="0" min="0" step="0.5"
+          oninput="updateSolution();updateGeomIndicator()">
+        <div class="help">0 = el sistema la resuelve automáticamente.</div>
+      </div>
+
+      <!-- Calidad geométrica -->
+      <div class="pbox">
+        <div class="ptitle">▸ CALIDAD GEOMÉTRICA</div>
+        <div id="geom-indicator" class="ls-status">—</div>
+        <div class="help" id="geom-advice" style="margin-top:4px"></div>
+      </div>
+
+      <!-- Restricciones opcionales -->
+      <div class="pbox">
+        <div class="ptitle">▸ RESTRICCIONES OPCIONALES</div>
+        <div class="help">Acotan el espacio de búsqueda sin forzar la solución.</div>
+        <div class="row2" style="margin-top:6px">
+          <div>
+            <label>RNG EST (nm) <span style="color:var(--tdim);font-size:9px">0=libre</span></label>
+            <input type="number" id="ls-rng-est" value="0" min="0" max="100" step="0.5" oninput="onLsRngEst()">
+          </div>
+          <div>
+            <label>PESO RESTRICCIÓN</label>
+            <select id="ls-rng-weight" style="width:100%">
+              <option value="0.3">Suave</option>
+              <option value="1" selected>Normal</option>
+              <option value="3">Fuerte</option>
+            </select>
+          </div>
+        </div>
+        <div class="help" id="ls-rng-hint" style="margin-top:4px;display:none"></div>
+      </div>
+
+      <!-- Calcular -->
+      <div class="pbox">
+        <div class="ptitle">▸ CALCULAR SOLUCIÓN</div>
+        <div class="help">Resuelve automáticamente. Si detecta maniobra, separa en dos piernas.</div>
+        <button class="btn" onclick="runLS()" style="margin-top:8px">▶ CALCULAR</button>
+        <div class="ls-status" id="ls-status">— en espera —</div>
+        <hr class="div">
+        <div class="help">RESIDUAL:</div>
+        <div class="res-bar-wrap"><div class="res-bar" id="res-bar-b"></div><span class="res-lbl" id="res-lbl-b">—</span></div>
+      </div>
+
+      <!-- Ajuste manual post-solución -->
+      <div class="pbox" id="sol-manual-adj" style="display:none">
+        <div class="ptitle">▸ AJUSTE FINO</div>
+        <div class="help">Ajustá la solución calculada manualmente.</div>
+        <div style="margin-top:6px">
+          <label>DISTANCIA T0 (nm)</label>
+          <input type="number" id="sol-rng" value="5" min="0.1" step="0.1" oninput="updateSolution()">
+          <input type="range" id="rng-slider" min="0.5" max="50" step="0.1" value="5" oninput="onRngSlider()">
+          <div class="row2" style="margin-top:2px">
+            <button class="btn amber sm" onclick="nudgeRng(-0.5)">◀ −0.5nm</button>
+            <button class="btn amber sm" onclick="nudgeRng(+0.5)">+0.5nm ▶</button>
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <label>RUMBO</label>
+          <div class="crs-big" id="crs-display">000.0°V</div>
+          <input type="range" id="crs-slider" min="0" max="359.9" step="0.1" value="0" oninput="onSlider()">
+          <div class="row2" style="margin-top:3px">
+            <button class="btn amber sm" onclick="nudge(-1)">◀ −1°</button>
+            <button class="btn amber sm" onclick="nudge(+1)">+1° ▶</button>
+          </div>
+          <div class="row2">
+            <button class="btn amber sm" onclick="nudge(-0.1)">◀ −0.1°</button>
+            <button class="btn amber sm" onclick="nudge(+0.1)">+0.1° ▶</button>
+          </div>
+          <hr class="div">
+          <div class="help">RESIDUAL MANUAL:</div>
+          <div class="res-bar-wrap"><div class="res-bar" id="res-bar"></div><span class="res-lbl" id="res-lbl">—</span></div>
+        </div>
+      </div>
+
+      <!-- Botón mostrar/ocultar ajuste -->
+      <button class="btn amber sm" onclick="toggleManualAdj()" id="btn-toggle-adj" style="display:none">
+        ▸ AJUSTE FINO MANUAL
+      </button>
+      <button class="btn amber sm" onclick="applyLStoA()" id="btn-apply-ls" style="display:none">
+        ↩ APLICAR AL AJUSTE MANUAL
+      </button>
+
+    </div><!-- /mode-s-controls -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- MODO K: EKF + IMM tiempo real                         -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div id="mode-k-controls" style="display:none">
+      <div class="pbox">
+        <div class="ptitle">▸ RUIDO DE PROCESO (q)</div>
+        <div class="help">Cuánto puede maniobrar el contacto entre marcaciones. Mayor q = más flexible, menos preciso.</div>
+        <input type="range" id="kf-q" min="-4" max="1" step="0.5" value="-2" oninput="onKFqSlider()">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tdim);margin-top:2px">
+          <span>Rígido</span><span id="kf-q-label" style="color:var(--blue)">q=0.01</span><span>Flexible</span>
+        </div>
+      </div>
+      <div class="pbox">
+        <div class="ptitle">▸ VELOCIDAD CONOCIDA</div>
+        <div class="help">Si conocés la velocidad del contacto, ingresala. 0 = libre.</div>
+        <div class="row2" style="margin-top:6px">
+          <div>
+            <label>VEL CONTACTO (kn)</label>
+            <input type="number" id="kf-spd-input" value="0" min="0" max="50" step="0.5" style="width:70px;">
+          </div>
+          <div style="align-self:flex-end;padding-bottom:2px">
+            <span style="font-size:9px;color:var(--tdim)">0 = libre</span>
+          </div>
+        </div>
+      </div>
+      <div class="pbox">
+        <div class="ptitle">▸ INICIALIZAR FILTRO</div>
+        <button class="btn" style="border-color:var(--blue);color:var(--blue)" onclick="kfInitHistory()">▶ USAR HISTORIAL COMPLETO</button>
+        <button class="btn" style="border-color:var(--gdim);color:var(--gdim);margin-top:4px" onclick="kfInitFromNow()">▷ SOLO DESDE AHORA</button>
+        <div class="ls-status" id="kf-status" style="margin-top:6px">— sin inicializar —</div>
+      </div>
+      <div class="pbox">
+        <div class="ptitle">▸ ESTADO EKF / IMM</div>
+        <div class="kf-row">RUMBO EST  <span class="kf-val" id="kf-crs">—</span></div>
+        <div class="kf-row">VELOCIDAD  <span class="kf-val" id="kf-spd">—</span></div>
+        <div class="kf-row">DIST ACT   <span class="kf-val" id="kf-rng">—</span></div>
+        <div class="kf-row">INCERT POS <span class="kf-val" id="kf-uncert">—</span></div>
+        <div class="kf-row">INNOVACIÓN <span class="kf-val" id="kf-innov">—</span></div>
+        <div class="innov-bar-wrap" style="margin-top:4px">
+          <div class="innov-bar" id="kf-innov-bar"></div>
+          <span class="innov-lbl" id="kf-innov-lbl">—</span>
+        </div>
+        <hr class="div">
+        <div class="ptitle" style="margin-top:4px">▸ MODELOS IMM</div>
+        <div style="margin-top:4px">
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+            <span style="font-size:9px;color:var(--tdim);width:52px">MRU</span>
+            <div style="flex:1;background:#010a04;border:1px solid var(--pbr);height:8px;position:relative">
+              <div id="imm-bar-0" style="height:100%;width:33%;background:#00ff7f;transition:width .3s"></div>
+            </div>
+            <span id="imm-lbl-0" style="font-size:9px;color:#00ff7f;width:32px;text-align:right">—</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+            <span style="font-size:9px;color:var(--tdim);width:52px">GIRO-E</span>
+            <div style="flex:1;background:#010a04;border:1px solid var(--pbr);height:8px;position:relative">
+              <div id="imm-bar-1" style="height:100%;width:33%;background:#ffb300;transition:width .3s"></div>
+            </div>
+            <span id="imm-lbl-1" style="font-size:9px;color:#ffb300;width:32px;text-align:right">—</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-size:9px;color:var(--tdim);width:52px">GIRO-B</span>
+            <div style="flex:1;background:#010a04;border:1px solid var(--pbr);height:8px;position:relative">
+              <div id="imm-bar-2" style="height:100%;width:33%;background:#00cfff;transition:width .3s"></div>
+            </div>
+            <span id="imm-lbl-2" style="font-size:9px;color:#00cfff;width:32px;text-align:right">—</span>
+          </div>
+        </div>
+        <hr class="div">
+        <button class="btn amber sm" onclick="applyKFtoA()" id="btn-apply-kf" style="display:none">↩ APLICAR A SOLUCIÓN S</button>
+      </div>
+
+      <!-- Inyecciones de velocidad -->
+      <div class="pbox">
+        <div class="ptitle">▸ VELOCIDAD EXTERNA (sensor)</div>
+        <div class="help">Dato puntual de velocidad en un tiempo conocido.</div>
+        <div class="row2" style="margin-top:6px">
+          <div><label>T (min)</label><input type="number" id="vi-t" value="0" min="0" step="1"></div>
+          <div><label>VEL (kn)</label><input type="number" id="vi-v" value="8" min="0.1" step="0.5"></div>
+        </div>
+        <button class="btn sm" style="border-color:var(--blue);color:var(--blue);margin-top:6px" onclick="addVelInjection()">+ AGREGAR</button>
+        <div id="vi-list" style="margin-top:6px;max-height:80px;overflow-y:auto;font-size:10px;"></div>
+      </div>
+
+      <div class="pbox" id="maneuver-panel" style="display:none">
+        <div class="ptitle">▸ MANIOBRA DETECTADA</div>
+        <div class="kf-row">TIEMPO MAN  <span class="kf-val" id="man-t">—</span></div>
+        <div class="kf-row">DIST MAN    <span class="kf-val" id="man-rng">—</span></div>
+        <div class="kf-row">RMB INICIAL <span class="kf-val" id="man-crs-b">—</span></div>
+        <div class="kf-row">RMB ACTUAL  <span class="kf-val" id="man-crs-a">—</span></div>
+        <div class="kf-row">VEL ACTUAL  <span class="kf-val" id="man-spd-a">—</span></div>
+        <div class="kf-row">DIST ACTUAL <span class="kf-val" id="man-rng-now">—</span></div>
+      </div>
+    </div><!-- /mode-k-controls -->
+
+    <!-- RESULTADOS — siempre visibles -->
+    <div class="pbox">
+      <div class="ptitle">▸ SOLUCIÓN TMA</div>
+      <div class="rline">RUMBO CONTACTO <span class="rv"  id="r-crs">—</span></div>
+      <div class="rline">VELOCIDAD      <span class="rv g" id="r-spd">—</span></div>
+      <div class="rline">DISTANCIA T0   <span class="rv b" id="r-rng">—</span></div>
+      <div class="rline">DISTANCIA ACT  <span class="rv b" id="r-rng-now">—</span></div>
+      <div class="rline">CPA DIST       <span class="rv"  id="r-cpd">—</span></div>
+      <div class="rline">CPA TIEMPO     <span class="rv"  id="r-cpt">—</span></div>
+      <div class="rline">ASPECTO        <span class="rv"  id="r-asp">—</span></div>
+    </div>
+
+  </div><!-- /tc-sol -->
+
+</div><!-- /lp -->
+
+<!-- CANVAS -->
+<div class="cwrap" id="cwrap">
+  <canvas id="plot"></canvas>
+  <div class="vis-panel" id="vis-panel"></div>
+  <div class="toolbar">
+    <button class="tbtn" onclick="zoom(1.25)" title="Zoom +">+</button>
+    <button class="tbtn" onclick="zoom(0.8)"  title="Zoom −">−</button>
+    <button class="tbtn" onclick="centerView()" title="Centrar">◎</button>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="imm-alert" id="imm-alert">
+    <div class="imm-alert-dot"></div>
+    <span class="imm-alert-txt" id="imm-alert-txt">⚠ MANIOBRA DETECTADA</span>
+    <button class="imm-alert-btn" onclick="setSolMode('K');kfInitHistory()">→ MODO K</button>
+  </div>
+  <div id="tooltip"></div>
+</div>
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+// OwnShip legs: [{t, hdg, spd}]  sorted by t
+let osLegs = [{t:0, hdg:0, spd:10}];
+
+// Contacts: { id: { color, bearings:[{time,brg,osHdg,osSpd}], crs, spd } }
+let contacts = {};
+let activeId = null;
+let cidCounter = 1;
+
+const PALETTE = ['#00cfff','#ffb300','#ff6b6b','#c084fc','#fb923c','#00ff7f','#f472b6','#a3e635','#38bdf8','#fbbf24'];
+let palIdx = 0;
+
+// ═══════════════════════════════════════════════════════════════
+// OWNSHIP
+// ═══════════════════════════════════════════════════════════════
+const KN2MM = 1852/60;
+
+function osAtTime(t) {
+  // Returns {hdg, spd} at time t
+  let leg = osLegs[0];
+  for (let l of osLegs) { if (l.t <= t) leg = l; else break; }
+  return leg;
+}
+
+function osPos(t) {
+  // Integrate position from t=0 to t
+  let x=0, y=0, prev=0;
+  const legs = [...osLegs].sort((a,b)=>a.t-b.t);
+  for (let i=0; i<legs.length; i++) {
+    const legStart = legs[i].t;
+    const legEnd   = (i+1 < legs.length) ? Math.min(legs[i+1].t, t) : t;
+    if (legStart >= t) break;
+    const dt = legEnd - legStart;
+    const d  = KN2MM * legs[i].spd * dt;
+    const r  = legs[i].hdg * Math.PI/180;
+    x += Math.sin(r)*d;
+    y += Math.cos(r)*d;
+    if (legEnd >= t) break;
+  }
+  return {x, y};
+}
+
+function addOSLeg() {
+  // Si AHORA activo, capturar tiempo en este instante exacto
+  if (osNowActive && sessionT0) {
+    document.getElementById('os-t').value = minToMMSS(nowMinutes());
+  }
+
+  const t   = mmssToMin(document.getElementById('os-t').value);
+  const hdg = parseFloat(document.getElementById('os-h').value);
+  const spd = parseFloat(document.getElementById('os-v').value);
+  if (isNaN(t)||isNaN(hdg)||isNaN(spd)) {
+    const el = document.getElementById('os-err');
+    el.textContent = '⚠ Ingresá tiempo (MM:SS), rumbo y velocidad.';
+    el.style.display = '';
+    setTimeout(() => { el.style.display = 'none'; }, 3000);
+    return;
+  }
+  document.getElementById('os-err').style.display = 'none';
+  osLegs = osLegs.filter(l => Math.abs(l.t - t) > 0.001);
+  osLegs.push({t, hdg, spd});
+  osLegs.sort((a,b)=>a.t-b.t);
+  // Solo avanzar el input si AHORA no está activo
+  if (!osNowActive) {
+    document.getElementById('os-t').value = minToMMSS(t + 10);
+  }
+  renderOSList();
+  draw();
+}
+
+function deleteOSLeg(t) {
+  if (osLegs.length <= 1) {
+    const el = document.getElementById('os-err');
+    el.textContent = '⚠ Debe quedar al menos un tramo.';
+    el.style.display = '';
+    setTimeout(() => { el.style.display = 'none'; }, 3000);
+    return;
+  }
+  osLegs = osLegs.filter(l => l.t !== t);
+  renderOSList();
+  draw();
+}
+
+function clearOSLegs() {
+  if (!confirm('¿Limpiar todos los tramos de OS? Quedará solo el tramo inicial.')) return;
+  osLegs = [{t:0, hdg:0, spd:10}];
+  document.getElementById('os-t').value = '00:00';
+  renderOSList();
+  draw();
+}
+
+function renderOSList() {
+  const el = document.getElementById('os-list');
+  el.innerHTML = osLegs.map(l => `
+    <div class="row">
+      <span>${minToMMSS(l.t)}</span>
+      <span>${String(l.hdg).padStart(3,'0')}°V</span>
+      <span>${l.spd}kn</span>
+      <span class="del" data-t="${l.t}">✕</span>
+    </div>`).join('');
+  const cur = osLegs[0];
+  document.getElementById('h-os').textContent = `${String(cur.hdg).padStart(3,'0')}°/${cur.spd}kn`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONTACTS
+// ═══════════════════════════════════════════════════════════════
+function addContact(id) {
+  const newId = id || ('C' + cidCounter++);
+  contacts[newId] = {
+    color: PALETTE[palIdx++ % PALETTE.length],
+    bearings: [],
+    crs: 0,
+    spd: 12,
+    rng: 5,
+    visible: true
+  };
+  activeId = newId;
+  refreshContactSelectors();
+  refreshBearingTab();
+  refreshSolTab();
+  updateHeaderStats();
+  renderVisPanel();
+  draw();
+  return newId;
+}
+
+function toggleContactVisible(id) {
+  if (!contacts[id]) return;
+  contacts[id].visible = !contacts[id].visible;
+  renderVisPanel();
+  draw();
+}
+
+function renderVisPanel() {
+  const el = document.getElementById('vis-panel');
+  if (!el) return;
+  const ids = Object.keys(contacts);
+  el.innerHTML = ids.map(id => {
+    const c   = contacts[id];
+    const on  = c.visible !== false;
+    const col = on ? c.color : 'var(--tdim)';
+    return `<button class="vbtn ${on?'on':''}" 
+      style="${on ? `border-color:${c.color};color:${c.color}` : ''}"
+      onclick="toggleContactVisible('${id}')">${id}</button>`;
+  }).join('');
+}
+
+function deleteContact() {
+  if (!activeId) return;
+  if (!confirm(`¿Eliminar contacto ${activeId}?`)) return;
+  delete contacts[activeId];
+  const ids = Object.keys(contacts);
+  activeId = ids.length ? ids[ids.length-1] : null;
+  if (!activeId) cidCounter=1;
+  refreshContactSelectors();
+  refreshBearingTab();
+  refreshSolTab();
+  updateHeaderStats();
+  renderVisPanel();
+  draw();
+}
+
+function selectContact(id) {
+  activeId = id;
+  document.getElementById('contact-sel').value = id;
+  document.getElementById('sol-sel').value = id;
+  const c = contacts[id];
+  if (!c) return;
+  document.getElementById('contact-color-bar').style.background = c.color;
+  document.getElementById('sol-color-bar').style.background     = c.color;
+  document.getElementById('crs-slider').value = c.crs;
+  document.getElementById('sol-spd').value    = c.spd;
+  document.getElementById('sol-rng').value    = c.rng;
+  document.getElementById('rng-slider').value = c.rng;
+  document.getElementById('crs-display').textContent = fmtCrs(c.crs);
+  document.getElementById('h-ac').textContent = id;
+  refreshBearingTab();
+  renderVelInjList();
+  updateImmAlert();
+  updateSolution();
+}
+
+function refreshContactSelectors() {
+  const ids = Object.keys(contacts);
+  const opts = ids.map(id =>
+    `<option value="${id}" ${id===activeId?'selected':''}>${id}</option>`
+  ).join('');
+  document.getElementById('contact-sel').innerHTML = opts || '<option value="">— sin contactos —</option>';
+  document.getElementById('sol-sel').innerHTML     = opts || '<option value="">— sin contactos —</option>';
+
+  if (activeId && contacts[activeId]) {
+    document.getElementById('contact-color-bar').style.background = contacts[activeId].color;
+    document.getElementById('sol-color-bar').style.background     = contacts[activeId].color;
+  }
+  updateHeaderStats();
+}
+
+function updateHeaderStats() {
+  document.getElementById('h-nc').textContent = Object.keys(contacts).length;
+  document.getElementById('h-ac').textContent = activeId || '—';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BEARINGS
+// ═══════════════════════════════════════════════════════════════
+
+// ── MODELO: núcleo de ingreso de marcación — sin DOM ────────────
+// Llamado tanto por addBearing (desde UI) como por injectBearing (desde sensor).
+// brgTrue: marcación ya en °V (verdadera). osHdg/osSpd del tramo OS en tiempo t.
+function _processBearing(contactId, t, brgTrue, osHdg, osSpd) {
+  if (!contacts[contactId]) addContact(contactId);
+
+  contacts[contactId].bearings.push({
+    time:  t,
+    brg:   ((brgTrue % 360) + 360) % 360,
+    osHdg: typeof osHdg === 'number' ? osHdg : 0,
+    osSpd: typeof osSpd === 'number' ? osSpd : 0,
+  });
+  contacts[contactId].bearings.sort((a, b) => a.time - b.time);
+
+  refreshBearingTab();
+  updateSolution();
+  if (contacts[contactId].bearings.length >= 3) {
+    setTimeout(() => { immRunBackground(contactId); updateImmAlert(); }, 10);
+  }
+  if (solMode === 'K' && kfStates[contactId] && kfStates[contactId].mode === 'fromnow') {
+    kfUpdateWithBearing(contactId);
+  }
+  draw();
+}
+
+// ── VISTA: addBearing lee el DOM y llama al modelo ──────────────
+function addBearing() {
+  if (!activeId) { addContact(); }
+
+  if (brgNowActive && sessionT0) {
+    document.getElementById('b-t').value = minToMMSS(nowMinutes());
+    onBrgTimeInput();
+  }
+
+  const t   = mmssToMin(document.getElementById('b-t').value);
+  const brg = parseFloat(document.getElementById('b-v').value);
+  if (isNaN(t) || isNaN(brg)) {
+    const el = document.getElementById('brg-err');
+    el.textContent = '⚠ Ingresá tiempo (MM:SS) y marcación válida.';
+    el.style.display = '';
+    setTimeout(() => { el.style.display = 'none'; }, 3000);
+    return;
+  }
+  document.getElementById('brg-err').style.display = 'none';
+
+  const osLeg  = osAtTime(t);
+  const osHdg  = typeof osLeg.hdg === 'number' ? osLeg.hdg : 0;
+  const brgTrue = brgModeRel
+    ? ((brg + osHdg) % 360 + 360) % 360
+    : ((brg          % 360) + 360) % 360;
+
+  _processBearing(activeId, t, brgTrue, osHdg, osLeg.spd);
+
+  if (!brgNowActive) {
+    document.getElementById('b-t').value = minToMMSS(t + 3);
+    onBrgTimeInput();
+  }
+}
+
+// ── SENSOR: injectBearing recibe un record ASTERIX Cat 238 nativo ────────
+// Campos ASTERIX reconocidos:
+//   cat           : 238                        — categoría (ignorado, informativo)
+//   track_label   : string                     — designación del contacto (ej. "C01")
+//   ts_epoch_ms   : number                     — timestamp wall-clock en ms (preferido)
+//   ts_utc        : string                     — "HH:MM:SS" (fallback si no hay ts_epoch_ms)
+//   bearing_degT  : number                     — marcación verdadera °T (obligatorio)
+//   os_hdg_degT   : number|undefined           — rumbo OS (opcional, se calcula si falta)
+//   os_spd_kt     : number|undefined           — velocidad OS en nudos (opcional)
+//
+// Compatibilidad legacy (campos internos anteriores):
+//   contactId, t, brg, brgRel, osHdg, osSpd   — aún funcionan si se pasan directamente
+function injectBearing(record) {
+  if (!record) { console.warn('[TMA] injectBearing: record nulo'); return; }
+
+  // ── Marcación verdadera °T ──────────────────────────────────────
+  // ASTERIX: bearing_degT | legacy: brg
+  const brgRaw = record.bearing_degT !== undefined ? record.bearing_degT : record.brg;
+  if (typeof brgRaw !== 'number' || isNaN(brgRaw)) {
+    console.warn('[TMA] injectBearing: bearing_degT inválido', record);
+    return;
+  }
+
+  // ── Identificador de contacto ───────────────────────────────────
+  // ASTERIX: track_label | legacy: contactId | fallback: activeId
+  const contactId = record.track_label || record.contactId || activeId;
+  if (!contactId) { console.warn('[TMA] injectBearing: sin contacto activo'); return; }
+
+  // ── Tiempo en minutos desde sessionT0 del TMA ──────────────────
+  // ASTERIX: ts_epoch_ms (preferido) → (ts_epoch_ms - sessionT0) / 60000
+  // ASTERIX: ts_utc "HH:MM:SS"       → minutos absolutos desde medianoche
+  // Legacy:  t                        → ya en minutos
+  let t;
+  if (record.ts_epoch_ms !== undefined && sessionT0) {
+    t = (record.ts_epoch_ms - sessionT0) / 60000;
+  } else if (record.ts_utc) {
+    const p = record.ts_utc.split(':').map(Number);
+    t = (p[0] * 3600 + (p[1] || 0) * 60 + (p[2] || 0)) / 60;
+  } else if (record.t === 'now' || record.t === undefined) {
+    t = nowMinutes();
+  } else {
+    t = Number(record.t);
+  }
+  if (isNaN(t)) { console.warn('[TMA] injectBearing: tiempo inválido', record); return; }
+
+  // ── OS state ────────────────────────────────────────────────────
+  // ASTERIX: os_hdg_degT / os_spd_kt | legacy: osHdg / osSpd
+  // Si no vienen en el record, se calcula desde las piernas de OS del TMA
+  const osLeg = osAtTime(t);
+  const osHdg = record.os_hdg_degT !== undefined ? record.os_hdg_degT
+              : record.osHdg       !== undefined ? record.osHdg
+              : (osLeg.hdg ?? 0);
+  const osSpd = record.os_spd_kt   !== undefined ? record.os_spd_kt
+              : record.osSpd       !== undefined ? record.osSpd
+              : (osLeg.spd ?? 0);
+
+  // ── Normalizar marcación ────────────────────────────────────────
+  // ASTERIX bearing_degT ya es verdadera. Legacy brgRel permite relativa.
+  const brgTrue = record.brgRel
+    ? ((brgRaw + osHdg) % 360 + 360) % 360
+    : ((brgRaw           % 360) + 360) % 360;
+
+  // Filtro de intervalo mínimo entre marcaciones (tiempo escenario)
+  // Solo aplica a registros inyectados — addBearing manual siempre pasa
+  const lastT = _lastBrgTime[contactId];
+  if (lastT !== undefined && (t - lastT) < BRG_MIN_INTERVAL_MIN) return;
+  _lastBrgTime[contactId] = t;
+
+  _processBearing(contactId, t, brgTrue, osHdg, osSpd);
+}
+
+// ── CANAL DE DATOS: BroadcastChannel("tma_feed") ────────────────
+// Permite que otras pestañas, workers o scripts externos inyecten
+// marcaciones en tiempo real sin tocar el DOM.
+//
+// Protocolo de mensajes:
+//   { type: 'bearing', ...campos de injectBearing }
+//   { type: 'ping' }  → responde { type: 'pong', sessionT0 }
+//
+// Ejemplo desde otra pestaña:
+//   const ch = new BroadcastChannel('tma_feed');
+//   ch.postMessage({ type: 'bearing', contactId: 'C1', brg: 220.5 });
+//
+// Intervalo mínimo entre marcaciones registradas (tiempo escenario, minutos)
+// 30 segundos = 0.5 minutos
+const BRG_MIN_INTERVAL_MIN = 0.5;
+const _lastBrgTime = {};   // contactId → último tiempo registrado (min)
+
+const _tmaChannel = new BroadcastChannel('tma_feed');
+_tmaChannel.addEventListener('message', e => {
+  const msg = e.data;
+  if (!msg || !msg.type) return;
+  switch (msg.type) {
+    case 'bearing':
+      // El record llega en formato ASTERIX Cat 238 nativo — injectBearing lo entiende directamente
+      injectBearing(msg);
+      break;
+    case 'ping':
+      _tmaChannel.postMessage({ type: 'pong', sessionT0, activeId });
+      break;
+    default:
+      console.warn('[TMA] BroadcastChannel: tipo desconocido', msg.type);
+  }
+});
+
+function deleteBearing(idx) {
+  if (!activeId) return;
+  contacts[activeId].bearings.splice(idx,1);
+  refreshBearingTab();
+  updateSolution();
+  draw();
+}
+
+function clearBearings() {
+  if (!activeId || !confirm('¿Borrar marcaciones del contacto activo?')) return;
+  contacts[activeId].bearings = [];
+  refreshBearingTab();
+  draw();
+}
+
+function refreshBearingTab() {
+  if (!activeId || !contacts[activeId]) {
+    document.getElementById('blist').innerHTML = '<span class="help">— sin contacto activo —</span>';
+    document.getElementById('brg-count').textContent = '0';
+    return;
+  }
+  const c   = contacts[activeId];
+  const brs = c.bearings;
+  document.getElementById('brg-count').textContent = brs.length;
+
+  // Mostrar OS en tiempo actual del input
+  onBrgTimeInput();
+
+  if (!brs.length) {
+    document.getElementById('blist').innerHTML = '<span class="help">— sin marcaciones —</span>';
+    return;
+  }
+  document.getElementById('blist').innerHTML = brs.map((b,i) => `
+    <div class="bitem">
+      <span style="color:var(--tdim)">${minToMMSS(b.time)}</span>
+      <span>${typeof b.brg === 'number' ? b.brg.toFixed(1) : '—'}°V</span>
+      <span style="color:var(--tdim)">${b.osHdg}°/${b.osSpd}kn</span>
+      <span class="x" data-idx="${i}">✕</span>
+    </div>`).join('');
+  updateGeomIndicator();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TMA — P0 FIJO POR RANGO + PRIMERA MARCACIÓN
+// ═══════════════════════════════════════════════════════════════
+// b.brg se almacena siempre en marcación VERDADERA — conversión ocurre en addBearing
+function trueBrg(b) {
+  return ((b.brg % 360) + 360) % 360;
+}
+
+// P0 = osPos(T0) + rng * dir(primera marcación verdadera)
+function computeP0(brs, rngNm) {
+  if (!brs || !brs.length) return {x:0, y:0};
+  const b0  = brs[0];
+  const op0 = osPos(b0.time);
+  const tb0 = trueBrg(b0) * Math.PI/180;
+  const rngM = rngNm * 1852;
+  return {
+    x: op0.x + Math.sin(tb0)*rngM,
+    y: op0.y + Math.cos(tb0)*rngM
+  };
+}
+
+// Residual: dado P0 y (crs,spd), calcula distancia perp media a los rayos
+function computeResidual(brs, P0, crs, spd) {
+  if (!brs || brs.length < 2) return 0;
+  const r    = crs * Math.PI/180;
+  const dirX = Math.sin(r), dirY = Math.cos(r);
+  const V    = KN2MM * spd;
+  let res = 0;
+  brs.forEach(b => {
+    const op  = osPos(b.time);
+    const tb  = trueBrg(b) * Math.PI/180;
+    const rdx = Math.sin(tb), rdy = Math.cos(tb);
+    // Contact position at time t
+    const cx  = P0.x + dirX*V*b.time;
+    const cy  = P0.y + dirY*V*b.time;
+    // Perpendicular distance from contact pos to bearing ray
+    const ex  = cx - op.x, ey = cy - op.y;
+    res += Math.abs(ex*(-rdy) + ey*rdx);
+  });
+  return res / brs.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EKF — Extended Kalman Filter para TMA bearing-only
+// Estado: x = [px, py, vx, vy]  (metros, metros/min)
+// Observación: marcación relativa verdadera = atan2(px-osx, py-osy)
+// ═══════════════════════════════════════════════════════════════
+
+// Utilidades matriciales (matrices como arrays planos, row-major)
+// Todas las matrices 4x4 o 4x1
+const M = {
+  // Crear matriz NxN de ceros
+  zeros:(r,c)=>new Array(r*c).fill(0),
+  // Identidad NxN
+  eye:n=>{const m=new Array(n*n).fill(0);for(let i=0;i<n;i++)m[i*n+i]=1;return m;},
+  // Multiplicar AxB  (A: r×k, B: k×c)
+  mul:(A,B,r,k,c)=>{const C=new Array(r*c).fill(0);for(let i=0;i<r;i++)for(let j=0;j<c;j++)for(let l=0;l<k;l++)C[i*c+j]+=A[i*k+l]*B[l*c+j];return C;},
+  // Transponer A (r×c)
+  T:(A,r,c)=>{const B=new Array(r*c).fill(0);for(let i=0;i<r;i++)for(let j=0;j<c;j++)B[j*r+i]=A[i*c+j];return B;},
+  // Suma A+B
+  add:(A,B)=>A.map((v,i)=>v+B[i]),
+  // Escalar
+  scale:(A,s)=>A.map(v=>v*s),
+  // A + s*B
+  addS:(A,B,s)=>A.map((v,i)=>v+s*B[i]),
+  // Invertir 2x2
+  inv2:M=>{const d=M[0]*M[3]-M[1]*M[2];return[M[3]/d,-M[1]/d,-M[2]/d,M[0]/d];},
+  // Invertir 1x1
+  inv1:M=>[1/M[0]],
+};
+
+function ekfPredict(state, dt, q) {
+  // state: {x:[px,py,vx,vy], P:16-array}
+  // dt en minutos, q ruido de proceso (m²/min³)
+  const {x, P} = state;
+
+  // Predecir estado
+  const xp = [
+    x[0] + x[2]*dt,
+    x[1] + x[3]*dt,
+    x[2],
+    x[3]
+  ];
+
+  // F (jacobiano del proceso) = identidad + dt en bloques
+  // F = [[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]]
+  const F = [1,0,dt,0, 0,1,0,dt, 0,0,1,0, 0,0,0,1];
+
+  // Q: ruido de proceso (modelo de aceleración discreta)
+  const dt2=dt*dt, dt3=dt2*dt, dt4=dt3*dt;
+  const Q = [
+    q*dt4/4, 0, q*dt3/2, 0,
+    0, q*dt4/4, 0, q*dt3/2,
+    q*dt3/2, 0, q*dt2, 0,
+    0, q*dt3/2, 0, q*dt2
+  ];
+
+  // Pp = F*P*F' + Q
+  const FP   = M.mul(F, P, 4, 4, 4);
+  const FT   = M.T(F, 4, 4);
+  const FPFt = M.mul(FP, FT, 4, 4, 4);
+  const Pp   = M.add(FPFt, Q);
+
+  return {x: xp, P: Pp};
+}
+
+function ekfUpdate(state, brg_rad, osx, osy, R) {
+  // brg_rad: marcación verdadera en radianes
+  // R: varianza del ruido de observación (rad²)
+  const {x, P} = state;
+
+  const dx = x[0] - osx;
+  const dy = x[1] - osy;
+  const r2 = dx*dx + dy*dy;
+  if (r2 < 1) return state; // evitar división por cero
+
+  // Observación predicha
+  const z_pred = Math.atan2(dx, dy);
+
+  // Innovación (normalizada a [-π, π])
+  let innov = brg_rad - z_pred;
+  while (innov >  Math.PI) innov -= 2*Math.PI;
+  while (innov < -Math.PI) innov += 2*Math.PI;
+
+  // Jacobiano H (1×4): ∂atan2(dx,dy)/∂[px,py,vx,vy]
+  // ∂/∂px = dy/r², ∂/∂py = -dx/r², ∂/∂vx = 0, ∂/∂vy = 0
+  const H = [dy/r2, -dx/r2, 0, 0];
+
+  // S = H*P*H' + R  (escalar)
+  const HP  = M.mul(H, P, 1, 4, 4);       // 1×4
+  const Ht  = M.T(H, 1, 4);               // 4×1
+  const HPHt= M.mul(HP, Ht, 1, 4, 1);     // 1×1
+  const S   = HPHt[0] + R;
+
+  // Ganancia de Kalman K = P*H'/S  (4×1)
+  const K = M.scale(M.mul(P, Ht, 4, 4, 1), 1/S);
+
+  // Actualizar estado
+  const xu = x.map((v,i) => v + K[i]*innov);
+
+  // Actualizar covarianza: P = (I - K*H)*P
+  const KH  = M.mul(K, H, 4, 1, 4);       // 4×4
+  const IKH = M.addS(M.eye(4), KH, -1);   // I - K*H
+  const Pu  = M.mul(IKH, P, 4, 4, 4);
+
+  return { x: xu, P: Pu, innov: Math.abs(innov)*180/Math.PI, S };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IMM — Interacting Multiple Model Filter
+// 3 modelos: MRU, GIRO-E (+ω), GIRO-B (-ω)
+// Cada modelo es un EKF con Q diferente
+// ═══════════════════════════════════════════════════════════════
+
+const IMM_OMEGA   = 3 * Math.PI/180;  // tasa de giro: 3°/min en radianes
+const IMM_PI_MAT  = [                  // matriz de transición de Markov 3×3
+  0.90, 0.05, 0.05,
+  0.05, 0.90, 0.05,
+  0.05, 0.05, 0.90,
+];
+const IMM_COLORS  = ['#00ff7f', '#ffb300', '#00cfff'];  // MRU, GIRO-E, GIRO-B
+
+// Construir Q para cada modelo
+// MRU: q pequeño (movimiento recto)
+// GIRO: q grande en dirección perpendicular (permite aceleración lateral)
+function immQ(dt, q_base, omega) {
+  const dt2=dt*dt, dt3=dt2*dt, dt4=dt3*dt;
+  // Para MRU usamos el Q estándar
+  if (omega === 0) {
+    return [
+      q_base*dt4/4, 0, q_base*dt3/2, 0,
+      0, q_base*dt4/4, 0, q_base*dt3/2,
+      q_base*dt3/2, 0, q_base*dt2, 0,
+      0, q_base*dt3/2, 0, q_base*dt2
+    ];
+  }
+  // Para GIRO: ruido de proceso aumentado en dirección lateral
+  const q_turn = q_base * 100;  // 100x más ruido para permitir giro
+  return [
+    q_turn*dt4/4, 0, q_turn*dt3/2, 0,
+    0, q_turn*dt4/4, 0, q_turn*dt3/2,
+    q_turn*dt3/2, 0, q_turn*dt2, 0,
+    0, q_turn*dt3/2, 0, q_turn*dt2
+  ];
+}
+
+// Predicción IMM con modelo de giro coordinado
+function immPredict(state, dt, q_base, omega) {
+  const {x, P} = state;
+
+  let xp, F;
+  if (omega === 0) {
+    // MRU: igual que EKF estándar
+    xp = [x[0]+x[2]*dt, x[1]+x[3]*dt, x[2], x[3]];
+    F  = [1,0,dt,0, 0,1,0,dt, 0,0,1,0, 0,0,0,1];
+  } else {
+    // Modelo de giro coordinado (CT)
+    // vx' = vx*cos(ω·dt) - vy*sin(ω·dt)
+    // vy' = vx*sin(ω·dt) + vy*cos(ω·dt)
+    const wdt = omega * dt;
+    const cw  = Math.cos(wdt), sw = Math.sin(wdt);
+    const sww = sw/omega, cww = (1-cw)/omega;
+    xp = [
+      x[0] + x[2]*sww  - x[3]*cww,
+      x[1] + x[2]*cww  + x[3]*sww,
+      x[2]*cw - x[3]*sw,
+      x[2]*sw + x[3]*cw
+    ];
+    F = [
+      1, 0,  sww, -cww,
+      0, 1,  cww,  sww,
+      0, 0,   cw,  -sw,
+      0, 0,   sw,   cw
+    ];
+  }
+
+  const Q   = immQ(dt, q_base, omega);
+  const FP  = M.mul(F, P, 4, 4, 4);
+  const FT  = M.T(F, 4, 4);
+  const Pp  = M.add(M.mul(FP, FT, 4, 4, 4), Q);
+  return { x: xp, P: Pp };
+}
+
+// Gaussian likelihood de la innovación
+function gaussLikelihood(innov_rad, S) {
+  return Math.exp(-0.5 * innov_rad*innov_rad / S) / Math.sqrt(2*Math.PI*Math.abs(S));
+}
+
+// Un paso IMM completo
+function immStep(imm, dt, brg_rad, osx, osy, q_base, R) {
+  // imm: { filters:[{x,P}×3], weights:[w0,w1,w2] }
+  const N = 3;
+  const omegas = [0, IMM_OMEGA, -IMM_OMEGA];
+  const pi     = IMM_PI_MAT;
+  const mu     = imm.weights;
+
+  // 1. MEZCLA — calcular pesos de mezcla c_ij = pi_ij * mu_i / c_j
+  const c = [0,0,0];
+  for (let j=0;j<N;j++) for (let i=0;i<N;i++) c[j] += pi[i*N+j]*mu[i];
+
+  const mu0 = [];  // pesos de mezcla normalizados
+  for (let j=0;j<N;j++) {
+    mu0.push([]);
+    for (let i=0;i<N;i++) mu0[j].push(c[j]>0 ? pi[i*N+j]*mu[i]/c[j] : 1/N);
+  }
+
+  // 2. Estados mezclados x0_j = Σ_i mu0_ij * x_i
+  const mixed = [];
+  for (let j=0;j<N;j++) {
+    const xm = [0,0,0,0];
+    for (let i=0;i<N;i++) for (let k=0;k<4;k++) xm[k] += mu0[j][i]*imm.filters[i].x[k];
+
+    // Covarianza mezclada
+    const Pm = new Array(16).fill(0);
+    for (let i=0;i<N;i++) {
+      const dx = xm.map((v,k) => imm.filters[i].x[k]-v);
+      const dxdxt = M.mul(dx, dx, 4, 1, 4);  // outer product 4×4
+      const scaled = dxdxt.map(v => v*mu0[j][i]);
+      const Pi_scaled = imm.filters[i].P.map(v => v*mu0[j][i]);
+      for (let k=0;k<16;k++) Pm[k] += Pi_scaled[k] + scaled[k];
+    }
+    mixed.push({ x: xm, P: Pm });
+  }
+
+  // 3. PREDICCIÓN + UPDATE para cada modelo
+  const updated = [];
+  const likelihoods = [];
+  for (let j=0;j<N;j++) {
+    let s = dt>0 ? immPredict(mixed[j], dt, q_base, omegas[j]) : mixed[j];
+    const u = ekfUpdate(s, brg_rad, osx, osy, R);
+    updated.push(u);
+    // Likelihood usando la innovación y S del update
+    const innov_rad = u.innov * Math.PI/180;
+    likelihoods.push(gaussLikelihood(innov_rad, u.S || R));
+  }
+
+  // 4. ACTUALIZAR PESOS mu_j = L_j * c_j / norm
+  const newWeights = updated.map((_, j) => likelihoods[j] * c[j]);
+  const wSum = newWeights.reduce((a,b)=>a+b, 0);
+  const normW = wSum > 0 ? newWeights.map(w=>w/wSum) : [1/N,1/N,1/N];
+
+  // 5. ESTIMACIÓN FUSIONADA x = Σ mu_j * x_j
+  const xFused = [0,0,0,0];
+  for (let j=0;j<N;j++) for (let k=0;k<4;k++) xFused[k] += normW[j]*updated[j].x[k];
+  const PFused = new Array(16).fill(0);
+  for (let j=0;j<N;j++) {
+    const dx = xFused.map((v,k) => updated[j].x[k]-v);
+    const dxdxt = M.mul(dx, dx, 4, 1, 4);
+    const Pi_scaled = updated[j].P.map(v=>v*normW[j]);
+    const dx_scaled = dxdxt.map(v=>v*normW[j]);
+    for (let k=0;k<16;k++) PFused[k] += Pi_scaled[k] + dx_scaled[k];
+  }
+
+  const meanInnov = updated.reduce((s,u,j)=>s+normW[j]*(u.innov||0), 0);
+
+  return {
+    filters: updated.map(u => ({ x: u.x, P: u.P })),
+    weights: normW,
+    fused:   { x: xFused, P: PFused, t: imm.t, meanInnov },
+  };
+}
+
+// Inicializar IMM desde semilla
+function immInit(brs, seedCrs, seedSpd, seedRng) {
+  const seed = ekfInitFromSeed(brs, seedCrs, seedSpd, seedRng);
+  // Los 3 filtros arrancan desde el mismo estado
+  return {
+    filters: [0,1,2].map(()=>({ x:[...seed.x], P:[...seed.P] })),
+    weights: [1/3, 1/3, 1/3],
+    fused:   { x:[...seed.x], P:[...seed.P], t: brs[0].time, meanInnov: 0 },
+    t:       brs[0].time,
+    // Guardar tracks de cada modelo para el plot
+    tracks:  [[], [], []],
+  };
+}
+
+// Correr IMM sobre historial de marcaciones
+// ═══════════════════════════════════════════════════════════════
+// IMM BACKGROUND — corre en silencio, alerta si detecta maniobra
+// ═══════════════════════════════════════════════════════════════
+const IMM_BG_THRESHOLD = 0.55;
+let immBgCache = {};
+
+function immRunBackground(id) {
+  const c = contacts[id];
+  if (!c || c.bearings.length < 3) { immBgCache[id] = null; return; }
+  try {
+    const savedActive = activeId;
+    activeId = id;
+    const imm = immRunHistory(c.bearings, 0.01, KF_R);
+    activeId = savedActive;
+    if (!imm) { immBgCache[id] = null; return; }
+    const turnWeight = imm.weights[1] + imm.weights[2];
+    const man = immAnalyzeManeuver(imm);
+    immBgCache[id] = {
+      weights: imm.weights, turnWeight,
+      detected: turnWeight > IMM_BG_THRESHOLD,
+      tManeuver: man && man.detected ? man.tManeuver : null,
+      crsBefore: man && man.detected ? man.crsBefore : null,
+      crsAfter:  man && man.detected ? man.crsAfter  : null,
+    };
+  } catch(e) { immBgCache[id] = null; }
+}
+
+function updateImmAlert() {
+  // Solo mostrar alerta si NO estamos en modo K (en K ya hay info completa)
+  const alertEl = document.getElementById('imm-alert');
+  const txtEl   = document.getElementById('imm-alert-txt');
+  if (!alertEl) return;
+
+  if (solMode === 'K' || !activeId) {
+    alertEl.classList.remove('visible');
+    return;
+  }
+
+  const bg = immBgCache[activeId];
+  if (bg && bg.detected) {
+    let msg = `⚠ MANIOBRA — ${activeId}`;
+    if (bg.tManeuver !== null) msg += `  T${bg.tManeuver}m`;
+    if (bg.crsBefore !== null) msg += `  ${bg.crsBefore.toFixed(0)}°→${bg.crsAfter.toFixed(0)}°`;
+    msg += `  (${(bg.turnWeight*100).toFixed(0)}%)`;
+    txtEl.textContent = msg;
+    alertEl.classList.add('visible');
+  } else {
+    alertEl.classList.remove('visible');
+  }
+}
+
+// Correr background IMM para todos los contactos con ≥3 marcaciones
+function runImmBackgroundAll() {
+  Object.keys(contacts).forEach(id => {
+    if (contacts[id].bearings.length >= 3) immRunBackground(id);
+  });
+  updateImmAlert();
+}
+
+// ═══════════════════════════════════════════════════════════════
+let velInjections = {};  // { contactId: [{t, spd}] }
+
+function getVelInjections(id) {
+  return velInjections[id] || [];
+}
+
+function addVelInjection() {
+  if (!activeId) return;
+  const t   = parseFloat(document.getElementById('vi-t').value);
+  const spd = parseFloat(document.getElementById('vi-v').value);
+  if (isNaN(t) || isNaN(spd) || spd <= 0) return;
+  if (!velInjections[activeId]) velInjections[activeId] = [];
+  // Evitar duplicados en el mismo tiempo
+  velInjections[activeId] = velInjections[activeId].filter(v => v.t !== t);
+  velInjections[activeId].push({ t, spd });
+  velInjections[activeId].sort((a,b) => a.t - b.t);
+  renderVelInjList();
+  // Re-correr el filtro automáticamente
+  kfInitHistory();
+}
+
+function removeVelInjection(id, t) {
+  if (!velInjections[id]) return;
+  velInjections[id] = velInjections[id].filter(v => v.t !== t);
+  renderVelInjList();
+  kfInitHistory();
+}
+
+function renderVelInjList() {
+  const el = document.getElementById('vi-list');
+  if (!el) return;
+  const injs = getVelInjections(activeId);
+  if (!injs.length) { el.innerHTML = '<span style="color:var(--tdim)">— sin inyecciones —</span>'; return; }
+  el.innerHTML = injs.map(v =>
+    `<div class="bitem">
+      <span style="color:var(--blue)">T${v.t}m → ${v.spd}kn</span>
+      <span class="x" onclick="removeVelInjection('${activeId}',${v.t})">✕</span>
+    </div>`
+  ).join('');
+}
+
+// Pseudo-update de Kalman: inyectar velocidad escalar conocida
+// Reescala vx/vy preservando dirección, ajusta covarianza
+function immApplyVelInjection(imm, spdKn) {
+  const spdMs = KN2MM * spdKn;   // m/min
+  const R_vel = (KN2MM * 0.5)**2; // varianza: ±0.5kn
+
+  // Aplicar a los 3 filtros y al fusionado
+  function applyToState(state) {
+    const vx = state.x[2], vy = state.x[3];
+    const curSpd = Math.sqrt(vx*vx + vy*vy);
+    if (curSpd < 1) return state;  // evitar división por cero
+
+    // Reescalar velocidad manteniendo dirección
+    const scale = spdMs / curSpd;
+    const xu = [...state.x];
+    xu[2] = vx * scale;
+    xu[3] = vy * scale;
+
+    // Reducir incertidumbre en velocidad (bloques P[2,3] de la covarianza)
+    const Pu = [...state.P];
+    // Atenuar la covarianza del bloque velocidad
+    const vFactor = R_vel / (R_vel + state.P[10]);  // ganancia simplificada
+    Pu[10] = state.P[10] * vFactor;  // Pvxvx
+    Pu[15] = state.P[15] * vFactor;  // Pvyvy
+    Pu[11] = Pu[14] = state.P[11] * vFactor;  // covarianza cruzada
+
+    return { x: xu, P: Pu };
+  }
+
+  return {
+    ...imm,
+    filters: imm.filters.map(f => applyToState(f)),
+    fused:   applyToState(imm.fused),
+    weights: [...imm.weights],
+  };
+}
+
+function immRunHistory(brs, q, R) {
+  if (brs.length < 2) return null;
+
+  const spdInput = kfGetSpd();
+  const spdFixed = spdInput > 0;
+  const seedSpd  = spdFixed ? spdInput : 12;
+
+  // ── PASO 1: semilla sobre las PRIMERAS marcaciones únicamente ───
+  // Usar máximo las 5 primeras — donde el contacto va recto antes de cualquier maniobra.
+  // Esto evita que el LS promedio dos rumbos distintos y entregue una semilla inútil.
+  const brsForSeed = brs.slice(0, Math.min(5, Math.ceil(brs.length * 0.4)));
+  const spdListSeed = spdFixed ? [seedSpd]
+    : Array.from({ length: 10 }, (_, i) => 2 + (40 - 2) * i / 9);
+  const seedResult = lsGridSearch(
+    (crs, spd, rng) => objectiveLS(brsForSeed, crs, spd, rng, 0, 0),
+    { crsSteps: 72, rngSteps: 20, rngMin: 0.5, rngMax: 50, spdList: spdListSeed }
+  );
+  let bestCrs = seedResult.crs, bestRng = seedResult.rng, bestSpd = seedResult.spd;
+
+  // ── PASO 2: correr IMM completo con la mejor semilla ────────────
+  let imm = immInit(brs, bestCrs, bestSpd, bestRng);
+  const tracks     = [[],[],[]];
+  const fusedTrack = [];
+  const weightHist = [];
+  const stateHist  = [];
+
+  const injections = getVelInjections(activeId).slice().sort((a,b)=>a.t-b.t);
+
+  for (let i=0; i<brs.length; i++) {
+    const b  = brs[i];
+    const op = osPos(b.time);
+    const dt = i===0 ? 0 : b.time - brs[i-1].time;
+    const brg_true = trueBrg(b) * Math.PI/180;
+
+    imm = immStep(imm, dt, brg_true, op.x, op.y, q, R);
+    imm.fused.t = b.time;
+    imm.t = b.time;
+
+    const tPrev = i===0 ? b.time : brs[i-1].time;
+    for (const inj of injections) {
+      if (inj.t > tPrev && inj.t <= b.time) {
+        imm = immApplyVelInjection(imm, inj.spd);
+        imm.fused.t = b.time;
+      }
+    }
+
+    for (let j=0;j<3;j++) tracks[j].push({ x: imm.filters[j].x[0], y: imm.filters[j].x[1], t: b.time });
+    fusedTrack.push({ x: imm.fused.x[0], y: imm.fused.x[1], t: b.time });
+    weightHist.push({ t: b.time, w: [...imm.weights] });
+    const vxH = imm.fused.x[2], vyH = imm.fused.x[3];
+    stateHist.push({
+      t:   b.time,
+      crs: ((Math.atan2(vxH,vyH)*180/Math.PI)+360)%360,
+      spd: Math.sqrt(vxH*vxH+vyH*vyH)/KN2MM,
+      px:  imm.fused.x[0],
+      py:  imm.fused.x[1],
+    });
+  }
+
+  imm.tracks     = tracks;
+  imm.fusedTrack = fusedTrack;
+  imm.weightHist = weightHist;
+  imm.stateHist  = stateHist;
+
+  // ── PASO 3: SMOOTHER RETROSPECTIVO POR LS SEGMENTADO ────────────
+  // Buscar el punto de corte T_man que minimiza el error angular
+  // de dos líneas rectas (pre y post maniobra) ajustadas por LS independientemente.
+  {
+    const spdInputVal = kfGetSpd();
+    const spdIsFixed  = spdInputVal > 0;
+    // Velocidades a probar en cada segmento
+    const spdCandidates = spdIsFixed
+      ? [spdInputVal]
+      : [4, 6, 8, 10, 12, 14, 16, 18, 20];
+
+    // Función LS rápida sobre un segmento para una velocidad dada
+    // objectiveLS con tiempo relativo al inicio del segmento
+    // Necesario para evaluar segmentos post-maniobra correctamente
+    function objLSseg(brsArr, crs, spd, rng) {
+      crs = ((crs % 360) + 360) % 360;
+      if (spd < 0.1) spd = 0.1;
+      if (rng < 0.1) rng = 0.1;
+      const b0  = brsArr[0];
+      const op0 = osPos(b0.time);
+      const tb0 = trueBrg(b0) * Math.PI/180;
+      const P0  = { x: op0.x + Math.sin(tb0)*rng*1852,
+                    y: op0.y + Math.cos(tb0)*rng*1852 };
+      const r   = crs * Math.PI/180;
+      const V   = KN2MM * spd;
+      let cost  = 0;
+      for (const b of brsArr) {
+        const dt  = b.time - b0.time;       // tiempo RELATIVO al inicio del segmento
+        const op  = osPos(b.time);
+        const cx  = P0.x + Math.sin(r)*V*dt;
+        const cy  = P0.y + Math.cos(r)*V*dt;
+        const tbEst = Math.atan2(cx - op.x, cy - op.y);
+        const tbObs = trueBrg(b) * Math.PI/180;
+        let dTh = tbEst - tbObs;
+        while (dTh >  Math.PI) dTh -= 2*Math.PI;
+        while (dTh < -Math.PI) dTh += 2*Math.PI;
+        cost += dTh * dTh;
+      }
+      return cost / brsArr.length;
+    }
+
+    function bestCrsRng(brsArr, spd) {
+      return lsGridSearch(
+        (crs, s, rng) => objLSseg(brsArr, crs, s, rng),
+        { crsSteps: 72, rngSteps: 15, rngMin: 0.5, rngMax: 30, spdList: [spd] }
+      );
+    }
+
+    // Requiere al menos 3 marcaciones en cada segmento
+    const MIN_SEG = 3;
+    const iMin = MIN_SEG - 1;
+    const iMax = brs.length - MIN_SEG;
+
+    if (iMax > iMin) {
+      let bestSplitVal = Infinity;
+      let bestTman = null;
+      let bestPreCrs = bestCrs, bestPreRng = bestRng;
+      let bestPostCrs = bestCrs, bestPostRng = bestRng;
+      let bestPreSpd = bestSpd, bestPostSpd = bestSpd;
+
+      for (let si = iMin; si <= iMax; si++) {
+        const brsPre_  = brs.slice(0, si + 1);
+        const brsPost_ = brs.slice(si);
+
+        // LS independiente sobre cada segmento para cada velocidad candidata
+        let vPre = Infinity, pCrs = bestCrs, pRng = bestRng, pSpd = bestSpd;
+        let vPost = Infinity, qCrs = bestCrs, qRng = bestRng, qSpd = bestSpd;
+
+        for (const spd of spdCandidates) {
+          const rPre  = bestCrsRng(brsPre_,  spd);
+          const rPost = bestCrsRng(brsPost_, spd);
+          if (rPre.val  < vPre)  { vPre  = rPre.val;  pCrs = rPre.crs;  pRng = rPre.rng;  pSpd = spd; }
+          if (rPost.val < vPost) { vPost = rPost.val; qCrs = rPost.crs; qRng = rPost.rng; qSpd = spd; }
+        }
+
+        // Penalizar splits donde pre y post dan el mismo rumbo
+        let dCrs = Math.abs(pCrs - qCrs);
+        if (dCrs > 180) dCrs = 360 - dCrs;
+        const sameDirPenalty = dCrs < 20 ? 3.0 : 1.0;
+
+        const vTotal = (vPre * brsPre_.length + vPost * brsPost_.length) * sameDirPenalty;
+        if (vTotal < bestSplitVal) {
+          bestSplitVal = vTotal;
+          bestTman     = brs[si].time;
+          bestPreCrs   = pCrs; bestPreRng  = pRng; bestPreSpd  = pSpd;
+          bestPostCrs  = qCrs; bestPostRng = qRng; bestPostSpd = qSpd;
+        }
+      }
+
+      // Solo aplicar si el corte mejora significativamente vs línea única
+      const vSingle = objectiveLS(brs, bestCrs, bestSpd, bestRng, 0, 0);
+      const improved = bestTman !== null && bestSplitVal / brs.length < vSingle * 0.65;
+
+      if (improved) {
+        // Reconstruir P0 de cada pierna desde el LS segmentado
+        const brsBestPre  = brs.slice(0, brs.findIndex(b=>b.time===bestTman) + 1);
+        const brsBestPost = brs.slice(brs.findIndex(b=>b.time===bestTman));
+        const b0pre  = brsBestPre[0];
+        const b0post = brsBestPost[0];
+        const op0pre  = osPos(b0pre.time);
+        const op0post = osPos(b0post.time);
+        const tb0pre  = trueBrg(b0pre)  * Math.PI/180;
+        const tb0post = trueBrg(b0post) * Math.PI/180;
+
+        imm._tManRetro   = bestTman;
+        imm._preSegCrs   = bestPreCrs;
+        imm._postSegCrs  = bestPostCrs;
+        imm._preSegRng   = bestPreRng;
+        imm._postSegRng  = bestPostRng;
+        imm._preSegSpd   = bestPreSpd;
+        imm._postSegSpd  = bestPostSpd;
+        // P0 de cada pierna: posición del contacto en su primera marcación
+        imm._preP0  = { x: op0pre.x  + Math.sin(tb0pre) *bestPreRng *1852,
+                        y: op0pre.y  + Math.cos(tb0pre) *bestPreRng *1852,
+                        t: b0pre.time };
+        imm._postP0 = { x: op0post.x + Math.sin(tb0post)*bestPostRng*1852,
+                        y: op0post.y + Math.cos(tb0post)*bestPostRng*1852,
+                        t: b0post.time };
+      }
+    }
+  }
+
+  return imm;
+}
+
+// Analiza el historial IMM — detecta maniobras por cambio sostenido en turnW
+function immAnalyzeManeuver(imm) {
+  if (!imm || !imm.weightHist || imm.weightHist.length < 4) return null;
+  const wh = imm.weightHist;
+  const sh = imm.stateHist;
+  const N  = wh.length;
+
+  // ── Camino 1: smoother retrospectivo ya calculó todo ────────────
+  if (imm._tManRetro !== undefined) {
+    const tMan  = imm._tManRetro;
+    const crsBefore = imm._preSegCrs  !== undefined ? imm._preSegCrs  : 0;
+    const crsAfter  = imm._postSegCrs !== undefined ? imm._postSegCrs : 0;
+    const spdBefore = imm._preSegSpd  !== undefined ? imm._preSegSpd  : 10;
+    const spdAfter  = imm._postSegSpd !== undefined ? imm._postSegSpd : 10;
+    const rngPre    = imm._preSegRng  !== undefined ? imm._preSegRng  : 5;
+
+    // Reconstruir mPt desde el LS segmentado:
+    // P0 pre = posición en T0 según pierna pre
+    // mPt = P0_pre propagada hasta tMan con crsBefore/spdBefore
+    const brs = imm.weightHist; // solo para tener referencia
+    // Necesitamos la primera marcación para anclar P0
+    const sh   = imm.stateHist;
+    const after = sh[N - 1];
+    const opNow = osPos(wh[N-1].t);
+    const rngNow = Math.sqrt((after.px-opNow.x)**2+(after.py-opNow.y)**2)/1852;
+
+    // mPt: posición del contacto en tMan según pierna pre
+    // Usamos el stateHist del IMM solo para ubicar mPt aproximado
+    const mIdx  = Math.max(0, sh.findIndex(s => s.t >= tMan));
+    const mPt   = sh[mIdx] || sh[0];
+    const opMan = osPos(tMan);
+    const rngMan = Math.sqrt((mPt.px-opMan.x)**2+(mPt.py-opMan.y)**2)/1852;
+
+    const result = {
+      tManeuver: tMan, mPt, rngManeuver: rngMan,
+      crsBefore, spdBefore, crsAfter, spdAfter,
+      rngNow, confidence: 1.0,
+      preP0:  imm._preP0,
+      postP0: imm._postP0,
+    };
+    return { detected: true, maneuvers: [result], ...result };
+  }
+
+  // ── Camino 2: detección por pesos IMM ───────────────────────────
+  const tw    = wh.map(w => w.w[1] + w.w[2]);
+  const baseW = (tw[0] + tw[1] + tw[2]) / 3;
+  const RISE_THRESH = 0.08, MIN_GAP = 3;
+  const maneuvers = [];
+  let lastIdx = -MIN_GAP;
+
+  for (let i = 3; i < N - 1; i++) {
+    const rise     = tw[i]   - baseW;
+    const nextRise = tw[i+1] - baseW;
+    if (rise >= RISE_THRESH && nextRise >= RISE_THRESH - 0.03 && i - lastIdx >= MIN_GAP) {
+      maneuvers.push({ idx: i, jump: rise, t: wh[i].t });
+      lastIdx = i;
+    }
+  }
+
+  if (!maneuvers.length) return { detected: false };
+
+  const results = maneuvers.map(m => {
+    const mPt   = sh[m.idx];
+    const before = sh[Math.max(0, m.idx - 1)];
+    const after  = sh[N - 1];
+    const opMan  = osPos(m.t);
+    const rngMan = Math.sqrt((mPt.px-opMan.x)**2+(mPt.py-opMan.y)**2)/1852;
+    const opNow  = osPos(wh[N-1].t);
+    const rngNow = Math.sqrt((after.px-opNow.x)**2+(after.py-opNow.y)**2)/1852;
+    return {
+      tManeuver: m.t, mPt, rngManeuver: rngMan,
+      crsBefore: before.crs, spdBefore: before.spd,
+      crsAfter:  after.crs,  spdAfter:  after.spd,
+      rngNow, confidence: m.jump,
+    };
+  });
+
+  const p = results[0];
+  return { detected: true, maneuvers: results,
+    tManeuver: p.tManeuver, mPt: p.mPt, rngManeuver: p.rngManeuver,
+    crsBefore: p.crsBefore, spdBefore: p.spdBefore,
+    crsAfter:  p.crsAfter,  spdAfter:  p.spdAfter,
+    rngNow: p.rngNow, confidence: p.confidence,
+  };
+}
+
+function ekfInitFromSeed(brs, seedCrs, seedSpd, seedRng) {
+  // Inicializar estado desde una solución semilla
+  const b0  = brs[0];
+  const op0 = osPos(b0.time);
+  const tb0 = trueBrg(b0) * Math.PI/180;
+  const rngM = seedRng * 1852;
+
+  const px = op0.x + Math.sin(tb0)*rngM;
+  const py = op0.y + Math.cos(tb0)*rngM;
+  const r  = seedCrs * Math.PI/180;
+  const V  = KN2MM * seedSpd;
+  const vx = Math.sin(r)*V;
+  const vy = Math.cos(r)*V;
+
+  // Covarianza inicial: incertidumbre alta en posición, moderada en velocidad
+  const sp = (rngM * 0.3)**2;  // 30% del rango
+  const sv = (V * 0.5)**2;     // 50% de la velocidad
+  const P  = [sp,0,0,0, 0,sp,0,0, 0,0,sv,0, 0,0,0,sv];
+
+  return { x:[px,py,vx,vy], P, t: b0.time };
+}
+
+function ekfRunHistory(brs, q, R) {
+  // Procesar todas las marcaciones en orden cronológico
+  // Necesita semilla inicial: usar LS rápido
+  if (brs.length < 2) return null;
+
+  // Semilla: LS con velocidad libre
+  const spdInput = kfGetSpd();
+  const spdFixed = spdInput > 0;
+  const seedSpd  = spdFixed ? spdInput : 12;
+
+  // Búsqueda rápida en grilla gruesa para semilla
+  const spdListEkf = spdFixed ? [seedSpd]
+    : Array.from({ length: 8 }, (_, i) => 2 + (36 - 2) * i / 7);
+  const ekfSeed = lsGridSearch(
+    (crs, spd, rng) => objectiveLS(brs, crs, spd, rng, 0, 0),
+    { crsSteps: 36, rngSteps: 15, rngMin: 0.5, rngMax: 30, spdList: spdListEkf }
+  );
+  let bestCrs = ekfSeed.crs, bestRng = ekfSeed.rng, bestSpd = ekfSeed.spd;
+
+  let state = ekfInitFromSeed(brs, bestCrs, bestSpd, bestRng);
+  const innovations = [];
+
+  for (let i=0; i<brs.length; i++) {
+    const b   = brs[i];
+    const op  = osPos(b.time);
+    const dt  = i===0 ? 0 : b.time - brs[i-1].time;
+
+    // Predecir si hay dt > 0
+    if (dt > 0) state = ekfPredict(state, dt, q);
+
+    // Actualizar con marcación
+    const brg_true = trueBrg(b) * Math.PI/180;
+    const updated  = ekfUpdate(state, brg_true, op.x, op.y, R);
+    state = updated;
+    if (updated.innov !== undefined) innovations.push(updated.innov);
+  }
+
+  state.t = brs[brs.length-1].time;
+  state.meanInnov = innovations.length ? innovations.reduce((a,b)=>a+b,0)/innovations.length : 0;
+  return state;
+}
+
+function ekfStateToSolution(state, tNow, brs) {
+  const vx = state.x[2], vy = state.x[3];
+  const spd = Math.sqrt(vx*vx+vy*vy) / KN2MM;
+  const crs = ((Math.atan2(vx,vy)*180/Math.PI)+360)%360;
+
+  // Posición en tNow (última marcación)
+  const dt  = tNow - state.t;
+  const px  = state.x[0] + vx*Math.max(0,dt);
+  const py  = state.x[1] + vy*Math.max(0,dt);
+
+  // Distancia actual (en tNow)
+  const opNow  = osPos(tNow);
+  const rngNow = Math.sqrt((px-opNow.x)**2+(py-opNow.y)**2) / 1852;
+
+  // Distancia en T0 — retroceder el track al tiempo de la primera marcación
+  const t0   = brs ? brs[0].time : 0;
+  const dtT0 = tNow - t0;
+  const pxT0 = px - vx*dtT0;
+  const pyT0 = py - vy*dtT0;
+  const opT0 = osPos(t0);
+  const rngT0 = Math.sqrt((pxT0-opT0.x)**2+(pyT0-opT0.y)**2) / 1852;
+
+  // Incertidumbre posicional (1-sigma, nm)
+  const uncert = Math.sqrt((state.P[0]+state.P[5])/2) / 1852;
+
+  return { crs, spd, rng: rngT0, rngNow, uncert, px, py, pxT0, pyT0, state };
+}
+
+// Estado EKF por contacto (separado del estado manual A)
+// { state, q, R, mode: 'history'|'fromnow' }
+let kfStates = {};
+
+function kfGetQ() {
+  const exp = parseFloat(document.getElementById('kf-q').value);
+  return Math.pow(10, exp);
+}
+
+// Lee la velocidad del input propio del Modo K (0 = libre)
+function kfGetSpd() {
+  const el = document.getElementById('kf-spd-input');
+  if (!el) return 0;
+  const v = parseFloat(el.value);
+  return isNaN(v) ? 0 : v;
+}
+
+const KF_R = (2*Math.PI/180)**2; // varianza observación: 2°
+
+function onKFqSlider() {
+  const q = kfGetQ();
+  document.getElementById('kf-q-label').textContent = `q=${q<0.001?q.toExponential(0):q.toFixed(3)}`;
+  // Re-correr filtro si ya está inicializado
+  if (activeId && kfStates[activeId] && kfStates[activeId].mode==='history') {
+    kfInitHistory();
+  }
+}
+
+function kfInitHistory() {
+  if (!activeId || !contacts[activeId]) return;
+  const c = contacts[activeId];
+  if (c.bearings.length < 3) {
+    setKFStatus('err','Necesitás al menos 3 marcaciones.');
+    return;
+  }
+  setKFStatus('run','Inicializando IMM con historial...');
+  setTimeout(()=>{
+    const q = kfGetQ();
+    const imm = immRunHistory(c.bearings, q, KF_R);
+    if (!imm) { setKFStatus('err','Error al inicializar.'); return; }
+    // Guardar como kfState con estructura IMM
+    kfStates[activeId] = { imm, state: imm.fused, q, R: KF_R, mode:'history' };
+    document.getElementById('btn-apply-kf').style.display=''; // btn-apply-kf-c removed
+    renderKFState(activeId);
+    setKFStatus('ok',`Historial procesado (${c.bearings.length} marcaciones)`);
+    draw();
+  }, 30);
+}
+
+function kfInitFromNow() {
+  if (!activeId || !contacts[activeId]) return;
+  kfStates[activeId] = { state: null, q: kfGetQ(), R: KF_R, mode:'fromnow' };
+  document.getElementById('btn-apply-kf').style.display='none'; // btn-apply-kf-c removed
+  setKFStatus('run','Esperando próxima marcación...');
+  renderKFState(activeId);
+}
+
+function kfUpdateWithBearing(id, brg) {
+  // Llamado desde addBearing cuando modo K está activo
+  if (!kfStates[id]) return;
+  const kfs = kfStates[id];
+  const c   = contacts[id];
+  const brs = c.bearings;
+  if (!brs.length) return;
+  const b   = brs[brs.length-1]; // última marcación recién agregada
+  const op  = osPos(b.time);
+  const brg_true = trueBrg(b) * Math.PI/180;
+
+  if (!kfs.state) {
+    // Primera marcación en modo 'fromnow' — necesitamos al menos 2 para inicializar
+    if (brs.length < 2) { setKFStatus('run','Esperando más marcaciones...'); return; }
+    // Inicializar con mini-grilla solo sobre estas marcaciones
+    const state = ekfRunHistory(brs, kfs.q, kfs.R);
+    if (state) {
+      kfs.state = state;
+      document.getElementById('btn-apply-kf').style.display=''; // btn-apply-kf-c removed
+      setKFStatus('ok',`Filtro inicializado (${brs.length} marcaciones)`);
+    }
+  } else {
+    // Predecir + actualizar
+    const prevB = brs[brs.length-2];
+    const dt    = b.time - prevB.time;
+    if (dt > 0) kfs.state = ekfPredict(kfs.state, dt, kfs.q);
+    const updated = ekfUpdate(kfs.state, brg_true, op.x, op.y, kfs.R);
+    kfs.state = updated;
+    kfs.state.t = b.time;
+    setKFStatus('ok',`T${b.time}m — innov: ${(updated.innov||0).toFixed(2)}°`);
+  }
+  renderKFState(id);
+}
+
+// ── MODELO: calcula todo lo que necesita el panel KF — sin DOM ──
+function calcKFPanel(id) {
+  const kfs = kfStates[id];
+  if (!kfs || !kfs.state) return null;
+  const c    = contacts[id];
+  if (!c.bearings.length) return null;
+  const tNow = c.bearings[c.bearings.length-1].time;
+  const sol  = ekfStateToSolution(kfs.state, tNow, c.bearings);
+  const imm  = kfs.imm;
+  const innov = kfs.state.meanInnov || 0;
+
+  // CPA
+  const V    = KN2MM * sol.spd;
+  const r    = sol.crs * Math.PI/180;
+  const dirX = Math.sin(r), dirY = Math.cos(r);
+  let minD = Infinity, minT = 0;
+  for (let t = 0; t <= 180; t += 0.25) {
+    const d = Math.sqrt((sol.px+dirX*V*t - osPos(tNow+t).x)**2 +
+                        (sol.py+dirY*V*t - osPos(tNow+t).y)**2);
+    if (d < minD) { minD = d; minT = t; }
+  }
+
+  // Aspecto
+  const rel = ((sol.crs - osLegs[0].hdg) % 360 + 360) % 360;
+  const asp = rel<22.5||rel>337.5?'PROA':rel>157.5&&rel<202.5?'ALCANCE':
+              rel>=22.5&&rel<=112.5?'ESC-DR':rel>=247.5&&rel<=337.5?'ESC-IZQ':'CRUCE';
+
+  // IMM
+  let immInfo = null;
+  if (imm) {
+    const dom  = imm.weights.indexOf(Math.max(...imm.weights));
+    const vxF  = imm.fused.x[2], vyF = imm.fused.x[3];
+    immInfo = {
+      weights: imm.weights,
+      dom, domName: ['MRU','GIRO-E','GIRO-B'][dom],
+      crsNow: ((Math.atan2(vxF,vyF)*180/Math.PI)+360)%360,
+      spdNow: Math.sqrt(vxF*vxF+vyF*vyF)/KN2MM,
+    };
+  }
+
+  // Maniobra
+  const man = imm ? immAnalyzeManeuver(imm) : null;
+  let kfSolFinal = { ...sol };
+
+  if (man && man.detected && man.maneuvers?.length) {
+    const seg = man.maneuvers[0];
+    if (seg.postP0) {
+      const dt    = tNow - seg.postP0.t;
+      const rr    = seg.crsAfter * Math.PI/180;
+      const VV    = KN2MM * seg.spdAfter;
+      const px    = seg.postP0.x + Math.sin(rr)*VV*dt;
+      const py    = seg.postP0.y + Math.cos(rr)*VV*dt;
+      const opNow = osPos(tNow);
+      const rngNow = Math.sqrt((px-opNow.x)**2+(py-opNow.y)**2)/1852;
+      const pxT0  = px - Math.sin(rr)*VV*tNow;
+      const pyT0  = py - Math.cos(rr)*VV*tNow;
+      const rngT0 = Math.sqrt((pxT0-osPos(0).x)**2+(pyT0-osPos(0).y)**2)/1852;
+      kfSolFinal = { crs:seg.crsAfter, spd:seg.spdAfter, rng:rngT0,
+                     rngNow, px, py, pxT0, pyT0, uncert:sol.uncert, state:sol.state };
+    }
+  }
+
+  return { sol, kfSolFinal, innov, minD, minT, asp, immInfo, man, tNow };
+}
+
+// ── VISTA: solo DOM, recibe el resultado de calcKFPanel ─────────
+function renderKFState(id) {
+  const data = calcKFPanel(id);
+  if (!data) return;
+  const { sol, kfSolFinal, innov, minD, minT, asp, immInfo, man, tNow } = data;
+  const c = contacts[id];
+
+  // Panel EKF/IMM
+  document.getElementById('kf-crs').textContent    = sol.crs.toFixed(1)+'°V';
+  document.getElementById('kf-spd').textContent    = sol.spd.toFixed(1)+' kn';
+  document.getElementById('kf-rng').textContent    = fmtDist(sol.rngNow*1852);
+  document.getElementById('kf-uncert').textContent = `±${sol.uncert.toFixed(2)} nm`;
+  document.getElementById('kf-innov').textContent  = innov.toFixed(2)+'°';
+  const pct = Math.min(100, innov/10*100);
+  const bar = document.getElementById('kf-innov-bar');
+  bar.style.width = pct+'%';
+  bar.style.background = pct<20?'#00cfff':pct<50?'#ffb300':'#ff4444';
+
+  if (immInfo) {
+    immInfo.weights.forEach((w,j) => {
+      document.getElementById(`imm-bar-${j}`).style.width = (w*100).toFixed(1)+'%';
+      document.getElementById(`imm-lbl-${j}`).textContent = (w*100).toFixed(0)+'%';
+    });
+    setKFStatus('ok',
+      `Modelo: ${immInfo.domName} (${(immInfo.weights[immInfo.dom]*100).toFixed(0)}%)  ` +
+      `Rumbo act: ${immInfo.crsNow.toFixed(1)}°  Vel: ${immInfo.spdNow.toFixed(1)}kn`
+    );
+  }
+
+  // Panel solución TMA
+  document.getElementById('r-crs').textContent     = kfSolFinal.crs.toFixed(1)+'°V';
+  document.getElementById('r-spd').textContent     = kfSolFinal.spd.toFixed(1)+' kn';
+  document.getElementById('r-rng').textContent     = fmtDist(kfSolFinal.rng*1852);
+  document.getElementById('r-rng-now').textContent = fmtDist(kfSolFinal.rngNow*1852)+` (T${tNow}m)`;
+  document.getElementById('r-cpd').textContent     = fmtDist(minD);
+  document.getElementById('r-cpt').textContent     = minT.toFixed(1)+' min';
+  document.getElementById('r-asp').textContent     = asp;
+
+  // Guardar solución en el contacto
+  c._kfSol = kfSolFinal;
+
+  // Panel maniobra
+  const mp = document.getElementById('maneuver-panel');
+  if (man && man.detected && man.maneuvers?.length) {
+    mp.style.display = '';
+    c._maneuverPts = man.maneuvers.map(m => ({ ...m.mPt, t: m.tManeuver }));
+    c._maneuverPt  = c._maneuverPts[0];
+    const m0 = man.maneuvers[0];
+    document.getElementById('man-t').textContent       = man.maneuvers.map(m=>`T${m.tManeuver}m`).join(', ');
+    document.getElementById('man-rng').textContent     = m0.rngManeuver.toFixed(2)+' nm';
+    document.getElementById('man-crs-b').textContent   = m0.crsBefore.toFixed(1)+'°V';
+    document.getElementById('man-crs-a').textContent   = man.maneuvers[man.maneuvers.length-1].crsAfter.toFixed(1)+'°V';
+    document.getElementById('man-spd-a').textContent   = man.maneuvers[man.maneuvers.length-1].spdAfter.toFixed(1)+' kn';
+    document.getElementById('man-rng-now').textContent = m0.rngNow.toFixed(2)+' nm';
+    if (man.maneuvers.length > 1) document.getElementById('man-t').style.color = 'var(--amber)';
+  } else {
+    mp.style.display = 'none';
+    c._maneuverPts = null;
+    c._maneuverPt  = null;
+  }
+
+  draw();
+}
+
+function setKFStatus(type, msg) {
+  const el = document.getElementById('kf-status');
+  el.className = 'ls-status '+(type==='ok'?'ok':type==='err'?'err':'run');
+  el.textContent = msg;
+}
+
+function applyKFtoA() {
+  if (!activeId || !kfStates[activeId] || !kfStates[activeId].state) return;
+  const c    = contacts[activeId];
+  const tNow = c.bearings.length ? c.bearings[c.bearings.length-1].time : 0;
+  const sol  = ekfStateToSolution(kfStates[activeId].state, tNow, c.bearings);
+  c.crs = sol.crs; c.spd = sol.spd; c.rng = sol.rng;
+  setSolMode('S');
+  // Mostrar ajuste fino con los valores aplicados
+  document.getElementById('sol-manual-adj').style.display = '';
+  document.getElementById('btn-toggle-adj').style.display = '';
+  document.getElementById('btn-toggle-adj').textContent = '▾ OCULTAR AJUSTE FINO';
+  refreshSolTab();
+}
+
+// applyKFtoC eliminado — reemplazado por applyKFtoA que va al Modo S
+
+// ═══════════════════════════════════════════════════════════════
+// MODOS S / K
+// ═══════════════════════════════════════════════════════════════
+let cDragMode = null; // sin uso — mantenido para que el canvas mouse handler no explote
+let solMode = 'S';
+let lsSolution = null; // {crs, spd, rng, residual}
+
+function toggleManualAdj() {
+  const panel = document.getElementById('sol-manual-adj');
+  const btn   = document.getElementById('btn-toggle-adj');
+  const show  = panel.style.display === 'none';
+  panel.style.display = show ? '' : 'none';
+  btn.textContent = show ? '▾ OCULTAR AJUSTE FINO' : '▸ AJUSTE FINO MANUAL';
+}
+
+function setSolMode(m) {
+  solMode = m;
+  document.getElementById('msw-s').classList.toggle('active', m === 'S');
+  document.getElementById('msw-k').classList.toggle('active', m === 'K');
+  document.getElementById('msw-k').classList.toggle('k',      m === 'K');
+  document.getElementById('mode-s-controls').style.display = m === 'S' ? '' : 'none';
+  document.getElementById('mode-k-controls').style.display = m === 'K' ? '' : 'none';
+
+  // Toolbar C ya no existe — limpiar estado de drag si quedó
+  cDragMode = null; canvas.className = '';
+
+  if (m === 'S') { updateGeomIndicator(); if (lsSolution) renderLSSolution(lsSolution); }
+  if (m === 'K') { onKFqSlider(); if (activeId && kfStates[activeId]) renderKFState(activeId); }
+  updateImmAlert();
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALIDAD GEOMÉTRICA
+// Mide cuánto "varía" la geometría entre marcaciones.
+// Dos factores:
+//   1. Dispersión angular: cuánto cambia la marcación verdadera
+//   2. Maniobra de OS: si hay cambio de rumbo/vel entre marcaciones
+// ═══════════════════════════════════════════════════════════════
+// ── MODELO: cálculo puro, sin DOM ───────────────────────────
+// Recibe bearings + spdFixed como dato — no toca la pantalla.
+// Devuelve siempre un objeto completo con todos los campos.
+function assessGeometry(brs, spdFixed) {
+  if (!brs || brs.length < 2) return {
+    score: 0, level: 'INSUFICIENTE', color: 'err',
+    maneuver: false, totalDelta: 0, normalizedHdgChange: 0,
+    advice: 'Se necesitan al menos 2 marcaciones.'
+  };
+
+  // 1. Dispersión angular total (unwrapped)
+  const trues = brs.map(b => trueBrg(b));
+  let totalDelta = 0;
+  for (let i = 1; i < trues.length; i++) {
+    let d = trues[i] - trues[i-1];
+    if (d >  180) d -= 360;
+    if (d < -180) d += 360;
+    totalDelta += Math.abs(d);
+  }
+
+  // 2. Maniobra de OS entre primera y última marcación
+  const firstLeg = { hdg: brs[0].osHdg,              spd: brs[0].osSpd };
+  const lastLeg  = { hdg: brs[brs.length-1].osHdg,   spd: brs[brs.length-1].osSpd };
+  const hdgChange = Math.abs(firstLeg.hdg - lastLeg.hdg);
+  const normalizedHdgChange = Math.min(hdgChange, 360 - hdgChange);
+  const maneuver = normalizedHdgChange > 10 || Math.abs(firstLeg.spd - lastLeg.spd) > 1;
+
+  // 3. Score
+  const angularScore  = Math.min(100, totalDelta * 3);   // 33° → 100%
+  const maneuverBonus = maneuver ? 40 : 0;
+  const score = Math.min(100, angularScore + maneuverBonus);
+
+  // 4. Nivel y consejo — depende de spdFixed pero NO del DOM
+  let level, color, advice;
+  if (score >= 70) {
+    level = 'BUENA'; color = 'ok';
+    advice = spdFixed
+      ? 'Geometría suficiente. Solución de 2 variables confiable.'
+      : 'Geometría suficiente para resolver las 3 variables.';
+  } else if (score >= 35) {
+    level = 'MARGINAL'; color = 'run';
+    advice = spdFixed
+      ? 'Solución aceptable. Más marcaciones mejorarán la precisión.'
+      : 'Insuficiente para 3 variables. Ingresá velocidad o realizá una maniobra de OS.';
+  } else {
+    level = 'INSUFICIENTE'; color = 'err';
+    advice = spdFixed
+      ? 'Pocas marcaciones o geometría plana. Agregá más observaciones.'
+      : 'Imposible resolver 3 variables. Necesitás maniobra de OS o velocidad conocida.';
+  }
+
+  return { score, level, color, advice, maneuver, totalDelta, normalizedHdgChange };
+}
+
+// ── VISTA: solo DOM, recibe el resultado del modelo ─────────
+function updateGeomIndicator() {
+  if (!activeId || !contacts[activeId]) return;
+  const c = contacts[activeId];
+
+  if (!c.bearings.length) {
+    document.getElementById('geom-indicator').className = 'ls-status';
+    document.getElementById('geom-indicator').textContent = '— sin marcaciones —';
+    document.getElementById('geom-advice').textContent = '';
+    document.getElementById('geom-advice').style.color = '';
+    return;
+  }
+
+  // Leer el único dato de UI que necesita el modelo
+  const spdFixed = parseFloat(document.getElementById('sol-spd').value) > 0;
+
+  // Llamar al modelo con datos, no al DOM
+  const g = assessGeometry(c.bearings, spdFixed);
+
+  // Actualizar DOM con el resultado
+  const el = document.getElementById('geom-indicator');
+  el.className = 'ls-status ' + g.color;
+  el.textContent = `${g.level}  (Δbrg ${g.totalDelta.toFixed(1)}°${g.maneuver ? ' + MANIOBRA OS' : ''})`;
+
+  const advEl = document.getElementById('geom-advice');
+  if (!spdFixed && g.score < 35) {
+    advEl.textContent = '⚠ ' + g.advice + ' El LS será bloqueado con vel=0.';
+    advEl.style.color = 'var(--red)';
+  } else {
+    advEl.textContent = g.advice;
+    advEl.style.color = '';
+  }
+}
+function nelderMead(f, x0, opts) {
+  const n     = x0.length;
+  const alpha = opts.alpha || 1.0;   // reflexión
+  const gamma = opts.gamma || 2.0;   // expansión
+  const rho   = opts.rho   || 0.5;   // contracción
+  const sigma = opts.sigma || 0.5;   // reducción
+  const maxIter = opts.maxIter || 2000;
+  const tol     = opts.tol    || 1e-8;
+
+  // Inicializar simplex
+  let simplex = [x0.slice()];
+  for (let i=0; i<n; i++) {
+    const pt = x0.slice();
+    pt[i] += (Math.abs(pt[i]) > 1e-6 ? pt[i]*0.15 : 0.1);
+    simplex.push(pt);
+  }
+  let fvals = simplex.map(f);
+
+  for (let iter=0; iter<maxIter; iter++) {
+    // Ordenar
+    const idx = fvals.map((_,i)=>i).sort((a,b)=>fvals[a]-fvals[b]);
+    simplex = idx.map(i=>simplex[i]);
+    fvals   = idx.map(i=>fvals[i]);
+
+    // Convergencia
+    const spread = Math.max(...fvals) - fvals[0];
+    if (spread < tol) break;
+
+    // Centroide (sin el peor)
+    const cen = new Array(n).fill(0);
+    for (let i=0; i<n; i++) for (let j=0; j<n; j++) cen[j] += simplex[i][j]/n;
+
+    // Reflexión
+    const xr = cen.map((c,j) => c + alpha*(c - simplex[n][j]));
+    const fr = f(xr);
+
+    if (fr < fvals[0]) {
+      // Expansión
+      const xe = cen.map((c,j) => c + gamma*(xr[j]-c));
+      const fe = f(xe);
+      if (fe < fr) { simplex[n]=xe; fvals[n]=fe; }
+      else          { simplex[n]=xr; fvals[n]=fr; }
+    } else if (fr < fvals[n-1]) {
+      simplex[n]=xr; fvals[n]=fr;
+    } else {
+      // Contracción
+      const xc = cen.map((c,j) => c + rho*(simplex[n][j]-c));
+      const fc = f(xc);
+      if (fc < fvals[n]) { simplex[n]=xc; fvals[n]=fc; }
+      else {
+        // Reducción
+        for (let i=1; i<=n; i++) {
+          simplex[i] = simplex[0].map((v,j) => v + sigma*(simplex[i][j]-v));
+          fvals[i]   = f(simplex[i]);
+        }
+      }
+    }
+  }
+  return { x: simplex[0], f: fvals[0] };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LS — función objetivo y ejecución
+// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// ── MODELO: búsqueda en grilla LS — función pura, sin DOM ──────
+// objFn(crs, spd, rng) → número (menor = mejor)
+// opts: {
+//   crsSteps   número de pasos de rumbo   (defecto 72, cada 5°)
+//   rngSteps   número de pasos de rango   (defecto 20)
+//   rngMin     rango mínimo en nm         (defecto 0.5)
+//   rngMax     rango máximo en nm         (defecto 50)
+//   spdList    array de velocidades a probar (defecto [seedSpd])
+//   keepAll    si true devuelve array ordenado; si false solo el mejor
+// }
+// Devuelve { crs, spd, rng, val } o array de ellos si keepAll=true
+function lsGridSearch(objFn, opts = {}) {
+  const crsSteps = opts.crsSteps ?? 72;
+  const rngSteps = opts.rngSteps ?? 20;
+  const rngMin   = opts.rngMin   ?? 0.5;
+  const rngMax   = opts.rngMax   ?? 50;
+  const spdList  = opts.spdList  ?? [10];
+  const keepAll  = opts.keepAll  ?? false;
+
+  const results = keepAll ? [] : null;
+  let best = { val: Infinity, crs: 0, spd: spdList[0], rng: 5 };
+
+  for (let ic = 0; ic < crsSteps; ic++) {
+    const crs = ic * (360 / crsSteps);
+    for (let ir = 0; ir < rngSteps; ir++) {
+      const t   = rngSteps > 1 ? ir / (rngSteps - 1) : 0;
+      const rng = rngMin * Math.pow(rngMax / rngMin, t);
+      for (const spd of spdList) {
+        const val = objFn(crs, spd, rng);
+        if (val < best.val) best = { val, crs, spd, rng };
+        if (keepAll) results.push({ val, crs, spd, rng });
+      }
+    }
+  }
+
+  if (keepAll) {
+    results.sort((a, b) => a.val - b.val);
+    return results;
+  }
+  return best;
+}
+
+// Escala logarítmica de rango: igual distribución que antes
+function logRngList(rngMin, rngMax, steps) {
+  return Array.from({ length: steps }, (_, i) => {
+    const t = steps > 1 ? i / (steps - 1) : 0;
+    return rngMin * Math.pow(rngMax / rngMin, t);
+  });
+}
+
+function objectiveLS(brs, crs, spd, rng, rngEst, rngWeight) {
+  crs = ((crs % 360) + 360) % 360;
+  if (spd < 0.1) spd = 0.1;
+  if (rng < 0.1) rng = 0.1;
+  const P0  = computeP0(brs, rng);
+  const r   = crs * Math.PI/180;
+  const V   = KN2MM * spd;
+  const dx  = Math.sin(r), dy = Math.cos(r);
+
+  // Costo angular: suma de cuadrados de error de ángulo (radianes)
+  // Más robusto que distancia perpendicular — no favorece soluciones cercanas
+  let cost = 0;
+  brs.forEach(b => {
+    const op  = osPos(b.time);
+    const cx  = P0.x + dx*V*b.time;
+    const cy  = P0.y + dy*V*b.time;
+    const tbEst = Math.atan2(cx - op.x, cy - op.y); // marcación estimada
+    const tbObs = trueBrg(b) * Math.PI/180;          // marcación observada
+    // Diferencia angular normalizada [-π, π]
+    let dTh = tbEst - tbObs;
+    while (dTh >  Math.PI) dTh -= 2*Math.PI;
+    while (dTh < -Math.PI) dTh += 2*Math.PI;
+    cost += dTh * dTh;
+  });
+  cost /= brs.length;
+
+  // Penalización suave por rango estimado (si el operador lo ingresó)
+  if (rngEst && rngEst > 0 && rngWeight > 0) {
+    const dRng = (rng - rngEst) / rngEst; // error relativo
+    cost += rngWeight * dRng * dRng;
+  }
+
+  return cost;
+}
+
+function onLsRngEst() {
+  const v = parseFloat(document.getElementById('ls-rng-est').value);
+  const hint = document.getElementById('ls-rng-hint');
+  if (v > 0) {
+    hint.style.display = '';
+    hint.textContent = `Restricción activa: rng ≈ ${v} nm`;
+    hint.style.color = 'var(--amber)';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+function runLS() {
+  if (!activeId || !contacts[activeId]) return;
+  const c = contacts[activeId];
+  if (c.bearings.length < 3) {
+    setLSStatus('err', 'Se necesitan al menos 3 marcaciones.');
+    return;
+  }
+
+  const spdInput  = parseFloat(document.getElementById('sol-spd').value);
+  const spdFixed  = (!isNaN(spdInput) && spdInput > 0);
+  const rngEst    = parseFloat(document.getElementById('ls-rng-est').value) || 0;
+  const rngWeight = parseFloat(document.getElementById('ls-rng-weight').value) || 1;
+
+  // ── VERIFICACIÓN GEOMÉTRICA PREVIA ─────────────────────────
+  // Con velocidad libre se necesitan 3 variables — geometría debe ser suficiente
+  if (!spdFixed) {
+    const g = assessGeometry(c.bearings, spdFixed);
+    if (g.score < 35) {
+      setLSStatus('err',
+        '⚠ Geometría INSUFICIENTE para vel libre. ' +
+        'Ingresá velocidad conocida, agregá una maniobra de OS, o usá RNG EST como restricción.'
+      );
+      return;
+    }
+  }
+
+  setLSStatus('run', 'Buscando solución global...');
+
+  setTimeout(() => {
+    try {
+      // ── PASO 1: BÚSQUEDA GLOBAL EN GRILLA ──────────────────────
+      // Rumbo: 0–359° cada 3°  → 120 pasos (era 72)
+      // Rango: 0.5–50nm log   → 30 pasos  (era 20)
+      // Veloc: 2–36kn         → 15 pasos  (era 12, solo si libre)
+
+      const crsSteps = 120;
+      const rngSteps = 30;
+      const spdSteps = spdFixed ? 1 : 15;
+
+      // Si hay rango estimado, reducir búsqueda alrededor de él
+      const rngMin = rngEst > 0 ? Math.max(0.3, rngEst * 0.3) : 0.5;
+      const rngMax = rngEst > 0 ? rngEst * 3.5 : 50;
+      const spdMin = 1, spdMax = 40;
+
+      const obj = (crs, spd, rng) => objectiveLS(c.bearings, crs, spd, rng, rngEst, rngWeight);
+
+      // Grilla completa — una sola pasada, guardamos todos los resultados
+      const spdListLS = spdFixed ? [spdInput]
+        : Array.from({ length: spdSteps }, (_, i) => spdMin + (spdMax - spdMin) * i / (spdSteps - 1));
+
+      // Función de rango con escala log
+      const rngListLS = Array.from({ length: rngSteps }, (_, i) => rngAt(i));
+
+      const allResults = lsGridSearch(
+        obj,
+        { crsSteps, rngSteps, rngMin, rngMax, spdList: spdListLS, keepAll: true }
+      );
+
+      const best = allResults[0];
+      let bestCrs = best.crs, bestRng = best.rng, bestSpd = best.spd;
+
+      // Top seeds bien separados (al menos 20° de rumbo aparte)
+      const seeds = [allResults[0]];
+      for (const g of allResults.slice(1)) {
+        if (seeds.length >= 5) break;
+        const separated = seeds.every(s => {
+          let da = Math.abs(g.crs - s.crs);
+          if (da > 180) da = 360 - da;
+          return da > 20;
+        });
+        if (separated) seeds.push(g);
+      }
+
+      const candidates = [];
+      for (const seed of seeds) {
+        let res;
+        if (spdFixed) {
+          res = nelderMead(
+            ([crs, rng]) => obj(crs, spdInput, Math.max(0.3, rng)),
+            [seed.crs, seed.rng],
+            { maxIter: 6000, tol: 1e-12 }
+          );
+          const crs = ((res.x[0] % 360) + 360) % 360;
+          const rng = Math.max(0.3, res.x[1]);
+          candidates.push({ crs, spd: spdInput, rng, residual: res.f });
+        } else {
+          res = nelderMead(
+            ([crs, spd, rng]) => obj(crs, Math.max(1, spd), Math.max(0.3, rng)),
+            [seed.crs, seed.spd, seed.rng],
+            { maxIter: 6000, tol: 1e-12 }
+          );
+          const crs = ((res.x[0] % 360) + 360) % 360;
+          const spd = Math.min(40, Math.max(1, res.x[1]));
+          const rng = Math.max(0.3, res.x[2]);
+          candidates.push({ crs, spd, rng, residual: res.f });
+        }
+      }
+
+      // Elegir el candidato con menor residual
+      candidates.sort((a,b) => a.residual - b.residual);
+      let result = candidates[0];
+
+      // Residual en metros para mostrar (recalcular con función original sin penalización)
+      result.residualM = computeResidual(c.bearings, computeP0(c.bearings, result.rng), result.crs, result.spd);
+
+      lsSolution = result;
+      c._lsSol = { crs: result.crs, spd: result.spd, rng: result.rng };
+      renderLSSolution(result);
+      document.getElementById('btn-apply-ls').style.display = '';
+
+    } catch(e) {
+      setLSStatus('err', 'Error: ' + e.message);
+    }
+  }, 30);
+}
+
+function renderLSSolution(sol) {
+  // Mostrar en panel de resultados
+  document.getElementById('r-crs').textContent = sol.crs.toFixed(1)+'°V';
+  document.getElementById('r-spd').textContent = sol.spd.toFixed(1)+' kn';
+  document.getElementById('r-rng').textContent = sol.rng.toFixed(2)+' nm';
+
+  if (!activeId || !contacts[activeId]) return;
+  const c   = contacts[activeId];
+  const P0  = computeP0(c.bearings, sol.rng);
+  const V   = KN2MM * sol.spd;
+  const r   = sol.crs * Math.PI/180;
+  const dirX= Math.sin(r), dirY = Math.cos(r);
+
+  // Distancia actual
+  if (c.bearings.length) {
+    const tNow  = c.bearings[c.bearings.length-1].time;
+    const cxNow = P0.x + dirX*V*tNow;
+    const cyNow = P0.y + dirY*V*tNow;
+    const opNow = osPos(tNow);
+    const rNow  = Math.sqrt((cxNow-opNow.x)**2+(cyNow-opNow.y)**2);
+    document.getElementById('r-rng-now').textContent = fmtDist(rNow)+` (T${tNow}m)`;
+  }
+
+  // Aspecto
+  const osH = osLegs[0].hdg;
+  const rel = ((sol.crs - osH) % 360 + 360) % 360;
+  const asp = rel<22.5||rel>337.5?'PROA':rel>157.5&&rel<202.5?'ALCANCE':
+              rel>=22.5&&rel<=112.5?'ESC-DR':rel>=247.5&&rel<=337.5?'ESC-IZQ':'CRUCE';
+  document.getElementById('r-asp').textContent = asp;
+
+  // CPA
+  const tmax = 180;
+  let minD=Infinity, minT=0;
+  for (let t=0; t<=tmax; t+=0.25) {
+    const cx = P0.x + dirX*V*t;
+    const cy = P0.y + dirY*V*t;
+    const op = osPos(t);
+    const d  = Math.sqrt((cx-op.x)**2+(cy-op.y)**2);
+    if (d<minD){minD=d;minT=t;}
+  }
+  document.getElementById('r-cpd').textContent = fmtDist(minD);
+  document.getElementById('r-cpt').textContent = minT.toFixed(1)+' min';
+
+  // Barra residual modo B — usar residualM (en metros, sin penalización)
+  const resM = sol.residualM !== undefined ? sol.residualM : sol.residual;
+  const pct = Math.min(100, resM/(3*1852)*100);
+  const bar = document.getElementById('res-bar-b');
+  bar.style.width      = pct+'%';
+  bar.style.background = pct<5?'#00ff7f':pct<20?'#ffb300':'#ff4444';
+  document.getElementById('res-lbl-b').textContent = fmtDist(resM);
+  document.getElementById('h-res').textContent     = fmtDist(resM);
+
+  setLSStatus('ok',
+    `${sol.crs.toFixed(1)}° / ${sol.spd.toFixed(1)}kn / ${sol.rng.toFixed(2)}nm` +
+    `  |  residual: ${fmtDist(resM)}`
+  );
+
+  // Actualizar plot usando sol como solución activa del contacto (sin sobreescribir A)
+  c._lsSol = sol;
+  draw();
+}
+
+function setLSStatus(type, msg) {
+  const el = document.getElementById('ls-status');
+  el.className = 'ls-status ' + type;
+  el.textContent = msg;
+}
+
+function applyLStoA() {
+  if (!lsSolution || !activeId || !contacts[activeId]) return;
+  const c = contacts[activeId];
+  c.crs = lsSolution.crs;
+  c.spd = lsSolution.spd;
+  c.rng = lsSolution.rng;
+  // Mostrar panel de ajuste fino
+  document.getElementById('sol-manual-adj').style.display = '';
+  document.getElementById('btn-toggle-adj').style.display = '';
+  document.getElementById('btn-toggle-adj').textContent = '▾ OCULTAR AJUSTE FINO';
+  setSolMode('S');
+  refreshSolTab();
+  setLSStatus('ok', 'Solución aplicada. Podés ajustarla manualmente abajo.');
+}
+function onSlider() {
+  if (!activeId || !contacts[activeId]) return;
+  contacts[activeId].crs = parseFloat(document.getElementById('crs-slider').value);
+  updateSolution();
+}
+
+function nudge(d) {
+  if (!activeId || !contacts[activeId]) return;
+  contacts[activeId].crs = ((contacts[activeId].crs + d) % 360 + 360) % 360;
+  document.getElementById('crs-slider').value = contacts[activeId].crs;
+  updateSolution();
+}
+
+function onRngSlider() {
+  if (!activeId || !contacts[activeId]) return;
+  contacts[activeId].rng = parseFloat(document.getElementById('rng-slider').value);
+  document.getElementById('sol-rng').value = contacts[activeId].rng;
+  updateSolution();
+}
+
+function nudgeRng(d) {
+  if (!activeId || !contacts[activeId]) return;
+  contacts[activeId].rng = Math.max(0.1, contacts[activeId].rng + d);
+  document.getElementById('sol-rng').value    = contacts[activeId].rng.toFixed(1);
+  document.getElementById('rng-slider').value = contacts[activeId].rng;
+  updateSolution();
+}
+
+function updateSolution() {
+  if (!activeId || !contacts[activeId]) return;
+  const c   = contacts[activeId];
+  const spd = parseFloat(document.getElementById('sol-spd').value);
+  const rng = parseFloat(document.getElementById('sol-rng').value);
+  if (isNaN(spd)||spd<=0||isNaN(rng)||rng<=0) return;
+  c.spd = spd;
+  c.rng = rng;
+  document.getElementById('rng-slider').value = rng;
+
+  const crs = (typeof c.crs === 'number' && !isNaN(c.crs)) ? c.crs : 0;
+  document.getElementById('crs-display').textContent = fmtCrs(crs);
+  document.getElementById('r-crs').textContent = crs.toFixed(1)+'°V';
+  document.getElementById('r-spd').textContent = spd.toFixed(1)+' kn';
+  document.getElementById('r-rng').textContent = rng.toFixed(2)+' nm';
+
+  if (!c.bearings.length) {
+    document.getElementById('r-rng-now').textContent = '—';
+    draw(); return;
+  }
+
+  const P0  = computeP0(c.bearings, rng);
+  const res = computeResidual(c.bearings, P0, c.crs, spd);
+
+  // Distancia actual = distancia al último tiempo de marcación registrado
+  const tNow  = c.bearings[c.bearings.length-1].time;
+  const V2    = KN2MM * spd;
+  const r2    = c.crs * Math.PI/180;
+  const cxNow = P0.x + Math.sin(r2)*V2*tNow;
+  const cyNow = P0.y + Math.cos(r2)*V2*tNow;
+  const opNow = osPos(tNow);
+  const rngNow = Math.sqrt((cxNow-opNow.x)**2+(cyNow-opNow.y)**2);
+  document.getElementById('r-rng-now').textContent = fmtDist(rngNow) + ` (T${tNow}m)`;
+
+  // Aspect
+  const osH = osLegs[0].hdg;
+  const rel = ((c.crs - osH) % 360 + 360) % 360;
+  const asp = rel<22.5||rel>337.5?'PROA':rel>157.5&&rel<202.5?'ALCANCE':
+              rel>=22.5&&rel<=112.5?'ESC-DR':rel>=247.5&&rel<=337.5?'ESC-IZQ':'CRUCE';
+  document.getElementById('r-asp').textContent = asp;
+
+  // CPA
+  const V    = KN2MM * spd;
+  const r    = c.crs * Math.PI/180;
+  const dirX = Math.sin(r), dirY = Math.cos(r);
+  const tmax = 180;
+  let minD=Infinity, minT=0;
+  for (let t=0; t<=tmax; t+=0.25) {
+    const cx = P0.x + dirX*V*t;
+    const cy = P0.y + dirY*V*t;
+    const op = osPos(t);
+    const d  = Math.sqrt((cx-op.x)**2+(cy-op.y)**2);
+    if (d<minD){minD=d;minT=t;}
+  }
+  document.getElementById('r-cpd').textContent = fmtDist(minD);
+  document.getElementById('r-cpt').textContent = minT.toFixed(1)+' min';
+
+  // Residual bar (3nm = full bar)
+  const pct = Math.min(100, res/(3*1852)*100);
+  const bar = document.getElementById('res-bar');
+  bar.style.width      = pct+'%';
+  bar.style.background = pct<15?'#00ff7f':pct<40?'#ffb300':'#ff4444';
+  document.getElementById('res-lbl').textContent = fmtDist(res);
+  document.getElementById('h-res').textContent   = fmtDist(res);
+
+  draw();
+}
+
+function refreshSolTab() {
+  if (!activeId || !contacts[activeId]) return;
+  const c = contacts[activeId];
+  document.getElementById('crs-slider').value = c.crs;
+  document.getElementById('sol-spd').value    = c.spd;
+  document.getElementById('sol-rng').value    = c.rng;
+  document.getElementById('rng-slider').value = c.rng;
+  document.getElementById('crs-display').textContent = fmtCrs(c.crs);
+  document.getElementById('sol-color-bar').style.background = c.color;
+  updateSolution();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS
+// ═══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('plot');
+const ctx    = canvas.getContext('2d');
+const cwrap  = document.getElementById('cwrap');
+let vx=0, vy=0, vs=1;
+let panning=false, ps={x:0,y:0}, po={x:0,y:0};
+let _drawPending = false;
+
+function resize(){canvas.width=cwrap.clientWidth;canvas.height=cwrap.clientHeight;draw();}
+window.addEventListener('resize',resize);
+
+function w2s(wx,wy){return{x:canvas.width/2+vx+wx*vs,y:canvas.height/2+vy-wy*vs};}
+function s2w(sx,sy){return{x:(sx-canvas.width/2-vx)/vs,y:(canvas.height/2+vy-sy)/vs};}
+
+// draw() es idempotente: múltiples llamadas en el mismo frame producen un solo redraw
+function draw() {
+  if (_drawPending) return;
+  _drawPending = true;
+  requestAnimationFrame(() => {
+    _drawPending = false;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawGrid();
+    drawNorth();
+    drawOSTrack();
+    Object.entries(contacts).forEach(([id,c])=>{
+      if (c.visible === false) return;
+      drawContactBearings(c);
+      if (c.bearings.length>=1) drawContactSolution(c, id===activeId);
+    });
+    drawOSIcon();
+    drawLegend();
+  });
+}
+
+function drawGrid() {
+  const W = canvas.width, H = canvas.height;
+  const NM = 1852; // metros por milla náutica
+
+  // ── Paso de grilla: mínimo 55px entre líneas ──────────────────
+  const nmSteps = [0.25, 0.5, 1, 2, 5, 10, 20, 50, 100];
+  let stepNm = nmSteps[0];
+  for (const s of nmSteps) { if (s * NM * vs >= 55) { stepNm = s; break; } }
+  const stepM = stepNm * NM;
+  const stepPx = stepM * vs;
+  if (stepPx < 8) return;
+
+  const orig = w2s(0, 0); // posición de OS en pantalla
+
+  ctx.save();
+
+  // ── Líneas de grilla ─────────────────────────────────────────
+  // Menores (cada paso) — muy tenues
+  ctx.strokeStyle = '#0c2a1a';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([]);
+
+  // Líneas verticales
+  const x0 = orig.x % stepPx;
+  for (let x = x0; x < W; x += stepPx) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  // Líneas horizontales
+  const y0 = orig.y % stepPx;
+  for (let y = y0; y < H; y += stepPx) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Líneas mayores cada 5 pasos — un poco más visibles
+  const majorEvery = 5;
+  ctx.strokeStyle = '#143d22';
+  const mx0 = orig.x % (stepPx * majorEvery);
+  for (let x = mx0; x < W; x += stepPx * majorEvery) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  const my0 = orig.y % (stepPx * majorEvery);
+  for (let y = my0; y < H; y += stepPx * majorEvery) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // ── Etiquetas de distancia en los ejes ───────────────────────
+  ctx.font      = '8px Share Tech Mono';
+  ctx.textAlign = 'center';
+
+  // Eje horizontal: etiquetas sobre la línea horizontal de OS
+  // Usamos una fila a 12px del borde superior para no tapar nada
+  const labelY = 10;
+  const labelX = W - 4;
+
+  // Calcular qué múltiplos de stepM están en pantalla
+  const wLeft  = s2w(0, 0).x;
+  const wRight = s2w(W, 0).x;
+  const wTop   = s2w(0, 0).y;
+  const wBot   = s2w(0, H).y;
+
+  const ixMin = Math.ceil(wLeft  / stepM);
+  const ixMax = Math.floor(wRight / stepM);
+  const iyMin = Math.ceil(wBot   / stepM);
+  const iyMax = Math.floor(wTop  / stepM);
+
+  ctx.fillStyle = '#1a5530';
+
+  // Etiquetas eje X (horizontal) — borde inferior
+  for (let ix = ixMin; ix <= ixMax; ix++) {
+    if (ix === 0) continue;
+    const sx = w2s(ix * stepM, 0).x;
+    const label = ix * stepNm;
+    const txt = Number.isInteger(label) ? label + '' : label.toFixed(2).replace(/\.?0+$/,'');
+    ctx.fillText(txt, sx, H - 2);
+  }
+  // Etiquetas eje Y (vertical) — borde derecho
+  ctx.textAlign = 'right';
+  for (let iy = iyMin; iy <= iyMax; iy++) {
+    if (iy === 0) continue;
+    const sy = w2s(0, iy * stepM).y;
+    const label = iy * stepNm;
+    const txt = Number.isInteger(label) ? label + '' : label.toFixed(2).replace(/\.?0+$/,'');
+    ctx.fillText(txt, W - 2, sy + 3);
+  }
+
+  // Unidad en esquinas
+  ctx.fillStyle = '#2a6640';
+  ctx.textAlign = 'left';
+  ctx.font = '8px Share Tech Mono';
+  ctx.fillText('nm', 3, H - 2);
+
+  ctx.restore();
+
+  // ── Regla gráfica ─────────────────────────────────────────────
+  drawScaleBar(stepNm, stepPx);
+}
+
+function drawScaleBar(stepNm, stepPx) {
+  const x  = 14;
+  const y  = canvas.height - 22;
+  const bw = stepPx;   // exactamente un paso de grilla
+  const bh = 5;
+
+  ctx.save();
+  ctx.font      = '8px Share Tech Mono';
+
+  // Fondo para legibilidad
+  ctx.fillStyle = '#020d08cc';
+  ctx.fillRect(x - 3, y - 12, bw + 44, 20);
+
+  // Barra bicolor (estilo náutico): mitad verde / mitad negra
+  const half = bw / 2;
+  ctx.fillStyle = '#00c060';
+  ctx.fillRect(x, y, half, bh);
+  ctx.fillStyle = '#030f09';
+  ctx.fillRect(x + half, y, half, bh);
+  ctx.strokeStyle = '#00c06088';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, bw, bh);
+
+  // Marcas verticales en 0, mitad y extremo
+  ctx.strokeStyle = '#00c060';
+  [x, x + half, x + bw].forEach(sx => {
+    ctx.beginPath(); ctx.moveTo(sx, y - 3); ctx.lineTo(sx, y + bh + 2); ctx.stroke();
+  });
+
+  // Etiquetas
+  ctx.fillStyle = '#00c060';
+  const fmt = v => Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/\.?0+$/, '');
+
+  ctx.textAlign = 'left';
+  ctx.fillText('0', x - 1, y - 4);
+
+  ctx.textAlign = 'center';
+  ctx.fillText(fmt(stepNm / 2), x + half, y - 4);
+
+  ctx.textAlign = 'right';
+  ctx.fillText(fmt(stepNm) + ' nm', x + bw + 1, y - 4);
+
+  ctx.restore();
+}
+
+function drawNorth() {
+  const o=w2s(0,0);
+  ctx.save();
+  ctx.strokeStyle='#00ff7f33';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(o.x,o.y-14);ctx.lineTo(o.x,o.y-30);ctx.stroke();
+  ctx.fillStyle='#00ff7f44';ctx.font='bold 9px Orbitron,monospace';ctx.textAlign='center';
+  ctx.fillText('N',o.x,o.y-32);
+  ctx.restore();
+}
+
+function drawOSTrack() {
+  // Determine time range from all bearings
+  let tmax=0;
+  Object.values(contacts).forEach(c=>c.bearings.forEach(b=>{if(b.time>tmax)tmax=b.time;}));
+  if(tmax<=0)tmax=30;
+
+  ctx.save();
+  ctx.strokeStyle='#00c06055';ctx.lineWidth=1;ctx.setLineDash([3,5]);
+  ctx.beginPath();
+  const s0=w2s(0,0);ctx.moveTo(s0.x,s0.y);
+  const steps=Math.max(60,tmax);
+  for(let i=1;i<=steps;i++){
+    const t=(i/steps)*tmax;
+    const p=osPos(t);
+    const s=w2s(p.x,p.y);
+    ctx.lineTo(s.x,s.y);
+  }
+  ctx.stroke();
+
+  // Mark leg transitions
+  osLegs.forEach(leg=>{
+    if(leg.t>tmax)return;
+    const p=osPos(leg.t);
+    const s=w2s(p.x,p.y);
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(s.x,s.y,4,0,Math.PI*2);
+    ctx.fillStyle='#00c060';ctx.fill();
+    ctx.fillStyle='#00c06088';ctx.font='9px Share Tech Mono';
+    ctx.fillText(`T${leg.t} ${leg.hdg}°`,s.x+5,s.y-3);
+  });
+  ctx.restore();
+}
+
+function drawContactBearings(c) {
+  const RAY=800000;
+  c.bearings.forEach(b=>{
+    const op =osPos(b.time);
+    const tb =trueBrg(b)*Math.PI/180;
+    const rdx=Math.sin(tb),rdy=Math.cos(tb);
+    const s  =w2s(op.x,op.y);
+    const e  =w2s(op.x+rdx*RAY,op.y+rdy*RAY);
+    ctx.save();
+    ctx.strokeStyle=c.color+'99';ctx.lineWidth=1;ctx.setLineDash([6,5]);
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(s.x,s.y,3,0,Math.PI*2);
+    ctx.fillStyle=c.color;ctx.fill();
+    ctx.restore();
+  });
+}
+
+// Dibuja N segmentos rectos para múltiples maniobras
+// man.maneuvers = [{tManeuver, mPt, crsBefore, spdBefore, crsAfter, spdAfter}, ...]
+function drawManeuverSegments(c, man, tmax, isActive) {
+  if (!man || !man.detected || !man.maneuvers || !man.maneuvers.length) return;
+  const ext  = Math.max(tmax * 0.3, 10);
+  const seg  = man.maneuvers[0]; // por ahora una sola maniobra
+
+  const crsPre  = seg.crsBefore * Math.PI/180;
+  const crsPost = seg.crsAfter  * Math.PI/180;
+  const spdPre  = KN2MM * seg.spdBefore;
+  const spdPost = KN2MM * seg.spdAfter;
+
+  // ── Posición del contacto en cualquier tiempo usando P0 del LS ──
+  // Si tenemos P0 del smoother, usarlo. Si no, usar mPt del IMM.
+  function posPre(t) {
+    if (seg.preP0) {
+      const dt = t - seg.preP0.t;
+      return { x: seg.preP0.x + Math.sin(crsPre)*spdPre*dt,
+               y: seg.preP0.y + Math.cos(crsPre)*spdPre*dt };
+    }
+    const dt = t - seg.tManeuver;
+    return { x: seg.mPt.px + Math.sin(crsPre)*spdPre*dt,
+             y: seg.mPt.py + Math.cos(crsPre)*spdPre*dt };
+  }
+
+  function posPost(t) {
+    if (seg.postP0) {
+      const dt = t - seg.postP0.t;
+      return { x: seg.postP0.x + Math.sin(crsPost)*spdPost*dt,
+               y: seg.postP0.y + Math.cos(crsPost)*spdPost*dt };
+    }
+    const dt = t - seg.tManeuver;
+    return { x: seg.mPt.px + Math.sin(crsPost)*spdPost*dt,
+             y: seg.mPt.py + Math.cos(crsPost)*spdPost*dt };
+  }
+
+  // ── Calcular punto de maniobra como intersección de las dos piernas ──
+  // Usar posición en tManeuver de la pierna pre (más confiable)
+  const mPos = posPre(seg.tManeuver);
+
+  // ── Dibujar pierna pre: desde antes del inicio hasta tManeuver ──
+  const tFirst = c.bearings[0].time;
+  const pStart = posPre(tFirst - ext * 0.3);
+  const pEnd   = mPos;
+  drawSegLine(pStart.x, pStart.y, pEnd.x, pEnd.y, seg.crsBefore, c.color);
+
+  // ── Dibujar pierna post: desde tManeuver hacia adelante ──────────
+  const tLast  = c.bearings[c.bearings.length-1].time;
+  const qStart = mPos;
+  const qEnd   = posPost(tLast + ext * 0.3);
+  drawSegLine(qStart.x, qStart.y, qEnd.x, qEnd.y, seg.crsAfter, c.color);
+
+  // ── Puntos de marcación sobre su pierna correcta ─────────────────
+  c.bearings.forEach(b => {
+    const isBefore = b.time <= seg.tManeuver;
+    const pos = isBefore ? posPre(b.time) : posPost(b.time);
+    const cp  = w2s(pos.x, pos.y);
+    ctx.save(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(cp.x, cp.y, isActive ? 5 : 3, 0, Math.PI*2);
+    ctx.fillStyle = '#020d08'; ctx.strokeStyle = c.color;
+    ctx.lineWidth = 1.5; ctx.fill(); ctx.stroke(); ctx.restore();
+  });
+}
+
+function drawSegLine(x1, y1, x2, y2, hdg, color) {
+  const s = w2s(x1, y1), e = w2s(x2, y2);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+  ctx.shadowColor = color; ctx.shadowBlur = 8; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+  // Flecha al 60% del segmento
+  const mx = s.x + (e.x-s.x)*0.6, my = s.y + (e.y-s.y)*0.6;
+  drawArrow(mx, my, hdg, 10, color);
+  ctx.restore();
+}
+
+function drawContactSolution(c, isActive) {
+  if (!c.bearings.length) return;
+
+  let tmax = 0;
+  c.bearings.forEach(b => { if (b.time > tmax) tmax = b.time; });
+  const ext = Math.max(tmax * 0.3, 10);
+
+  // ── Obtener solución según prioridad ────────────────────────
+  // Modo K activo → KF. Siempre → LS. Fallback → manual.
+  let spd, crs, P0;
+  const useKF = isActive && solMode === 'K' && c._kfSol;
+  const useLS = c._lsSol;
+
+  if (useKF) {
+    spd = c._kfSol.spd; crs = c._kfSol.crs;
+    P0  = { x: c._kfSol.px, y: c._kfSol.py };
+  } else if (useLS) {
+    spd = c._lsSol.spd; crs = c._lsSol.crs;
+    P0  = computeP0(c.bearings, c._lsSol.rng);
+  } else {
+    spd = c.spd; crs = c.crs;
+    P0  = computeP0(c.bearings, c.rng || 5);
+  }
+  if (!spd || spd <= 0) return;
+
+  const V  = KN2MM * spd;
+  const r  = crs * Math.PI/180;
+  const dx = Math.sin(r), dy = Math.cos(r);
+
+  ctx.save();
+  ctx.strokeStyle = c.color;
+  ctx.lineWidth   = isActive ? 2.5 : 1.5;
+  ctx.shadowColor = c.color;
+  ctx.shadowBlur  = isActive ? 8 : 3;
+  ctx.setLineDash(isActive ? [] : [8, 4]);
+
+  // ── Decidir si dibujar segmentos de maniobra ────────────────
+  // Solo si hay maniobra detectada por el smoother (imm._tManRetro)
+  // Para contacto activo en K: usar kfStates
+  // Para cualquier contacto con _lsSol que tenga maniobra: usar la info del lsSol
+  let man = null;
+
+  if (isActive && solMode === 'K' && kfStates[activeId]?.imm) {
+    man = immAnalyzeManeuver(kfStates[activeId].imm);
+  } else if (c._maneuverPts && c._maneuverPts.length > 0) {
+    // Maniobra guardada desde renderKFState o desde el LS segmentado
+    // Reconstruir man desde los datos guardados en el contacto
+    const cId = Object.keys(contacts).find(k => contacts[k] === c);
+    if (cId && kfStates[cId]?.imm) {
+      man = immAnalyzeManeuver(kfStates[cId].imm);
+    }
+  }
+
+  const hasManeuver = man && man.detected;
+
+  // ── Dibujar track ───────────────────────────────────────────
+  if (hasManeuver) {
+    // Dos piernas con drawManeuverSegments
+    drawManeuverSegments(c, man, tmax, isActive);
+
+    // Tracks IMM tenues (solo en modo K activo)
+    if (isActive && solMode === 'K' && kfStates[activeId]?.imm?.tracks) {
+      kfStates[activeId].imm.tracks.forEach((track, j) => {
+        if (track.length < 2) return;
+        ctx.save();
+        ctx.strokeStyle = IMM_COLORS[j] + '33';
+        ctx.lineWidth = 1; ctx.setLineDash([2, 6]); ctx.shadowBlur = 0;
+        ctx.beginPath();
+        track.forEach((pt, i) => {
+          const s = w2s(pt.x, pt.y);
+          i === 0 ? ctx.moveTo(s.x, s.y) : ctx.lineTo(s.x, s.y);
+        });
+        ctx.stroke(); ctx.restore();
+      });
+    }
+  } else {
+    // Una sola pierna recta
+    const p0s = w2s(P0.x - dx*V*ext,     P0.y - dy*V*ext);
+    const p1s = w2s(P0.x + dx*V*ext*2,   P0.y + dy*V*ext*2);
+    ctx.beginPath(); ctx.moveTo(p0s.x, p0s.y); ctx.lineTo(p1s.x, p1s.y); ctx.stroke();
+
+    // Flecha
+    const ms = w2s(P0.x + dx*V*ext*0.5, P0.y + dy*V*ext*0.5);
+    drawArrow(ms.x, ms.y, crs, 12, c.color);
+
+    // Puntos de marcación sobre la línea
+    c.bearings.forEach(b => {
+      const cp = w2s(P0.x + dx*V*b.time, P0.y + dy*V*b.time);
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(cp.x, cp.y, isActive ? 5 : 3, 0, Math.PI*2);
+      ctx.fillStyle = '#020d08'; ctx.strokeStyle = c.color;
+      ctx.lineWidth = 1.5; ctx.fill(); ctx.stroke();
+    });
+  }
+
+  ctx.restore();
+
+  // ── Marcadores de maniobra (diamantes) ──────────────────────
+  if (c._maneuverPts) {
+    c._maneuverPts.forEach((mp, idx) => {
+      const ms = w2s(mp.px, mp.py);
+      ctx.save();
+      ctx.strokeStyle = '#ff6b6b'; ctx.fillStyle = '#ff6b6b33';
+      ctx.lineWidth = 2; ctx.shadowColor = '#ff6b6b'; ctx.shadowBlur = 10;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(ms.x, ms.y-10); ctx.lineTo(ms.x+8, ms.y);
+      ctx.lineTo(ms.x, ms.y+10); ctx.lineTo(ms.x-8, ms.y);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff6b6b'; ctx.font = '8px Share Tech Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText(`MAN${idx+1} T${mp.t}m`, ms.x + 12, ms.y + 3);
+      ctx.restore();
+    });
+  }
+
+  // ── Marcador T0 o Tnow ──────────────────────────────────────
+  const t0s = w2s(P0.x, P0.y);
+  const tLabel = (isActive && solMode === 'K') ? `T${tmax}m` : 'T0';
+  ctx.save();
+  ctx.fillStyle = c.color; ctx.strokeStyle = '#020d08';
+  ctx.lineWidth = 1; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(t0s.x, t0s.y, isActive ? 7 : 5, 0, Math.PI*2);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = c.color; ctx.font = '9px Share Tech Mono'; ctx.textAlign = 'left';
+  ctx.fillText(tLabel, t0s.x + 9, t0s.y + 3);
+  ctx.restore();
+
+  // ── Elipse de incertidumbre (solo K activo) ──────────────────
+  if (isActive && solMode === 'K' && c._kfSol?.state) {
+    drawEllipse(P0.x, P0.y, c._kfSol.state, c.color);
+  }
+}
+
+function drawEllipse(cx, cy, state, color) {
+  // Extrae elipse de incertidumbre del bloque de posición de P
+  // P[0]=Pxx, P[1]=Pxy, P[4]=Pyx, P[5]=Pyy  (row-major 4x4)
+  const Pxx = state.P[0], Pxy = state.P[1], Pyy = state.P[5];
+
+  // Eigenvalores del bloque 2x2
+  const tr   = Pxx + Pyy;
+  const det  = Pxx*Pyy - Pxy*Pxy;
+  const disc = Math.sqrt(Math.max(0, tr*tr/4 - det));
+  const l1   = tr/2 + disc;
+  const l2   = tr/2 - disc;
+
+  // Semi-ejes (1-sigma en metros)
+  const a = Math.sqrt(Math.max(0, l1));
+  const b = Math.sqrt(Math.max(0, l2));
+  if (a < 1) return;
+
+  // Ángulo del eje mayor
+  const angle = Math.atan2(l1 - Pxx, Pxy);
+
+  const s = w2s(cx, cy);
+  const ax = a * vs; // semi-eje en píxeles
+  const bx = b * vs;
+
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  // En canvas: y invertido, y Norte=arriba → rotar -angle
+  ctx.rotate(-angle);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, Math.max(ax, 3), Math.max(bx, 3), 0, 0, Math.PI*2);
+  ctx.strokeStyle = color + '66';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.stroke();
+  // Relleno tenue
+  ctx.fillStyle = color + '11';
+  ctx.fill();
+  ctx.restore();
+
+  // Label de incertidumbre
+  const uncertNm = (a / 1852).toFixed(2);
+  ctx.save();
+  ctx.fillStyle = color + 'aa';
+  ctx.font = '9px Share Tech Mono';
+  ctx.fillText(`±${uncertNm}nm`, s.x + ax + 4, s.y - 4);
+  ctx.restore();
+}
+
+function drawArrow(sx,sy,hdg,sz,color) {
+  ctx.save();
+  ctx.translate(sx,sy);ctx.rotate(hdg*Math.PI/180);
+  ctx.fillStyle=color;ctx.shadowBlur=0;
+  ctx.beginPath();
+  ctx.moveTo(0,-sz);ctx.lineTo(sz*0.4,sz*0.3);ctx.lineTo(0,0);ctx.lineTo(-sz*0.4,sz*0.3);
+  ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+function drawOSIcon() {
+  const leg=osLegs[0], s=w2s(0,0);
+  ctx.save();
+  ctx.translate(s.x,s.y);ctx.rotate(leg.hdg*Math.PI/180);
+  ctx.beginPath();
+  ctx.moveTo(0,-11);ctx.lineTo(6,8);ctx.lineTo(0,4);ctx.lineTo(-6,8);ctx.closePath();
+  ctx.strokeStyle='#00ff7f';ctx.fillStyle='#020d08';ctx.lineWidth=1.5;
+  ctx.fill();ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle='#00ff7f';ctx.font='10px Orbitron,monospace';
+  ctx.fillText('OS',s.x+10,s.y-9);
+}
+
+function drawLegend() {
+  const el=document.getElementById('legend');
+  const ids=Object.keys(contacts);
+  if(!ids.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:2px;color:var(--tdim);margin-bottom:4px">CONTACTOS</div>'+
+    ids.map(id=>{
+      const c=contacts[id];
+      const active=id===activeId?'▶ ':'  ';
+      return `<div class="legend-item">
+        <div class="legend-dot" style="background:${c.color}"></div>
+        <span style="color:${id===activeId?c.color:'var(--text)'}">${active}${id}</span>
+        <span style="color:var(--tdim);margin-left:4px">${(c.crs??0).toFixed(0)}° ${c.spd??'—'}kn</span>
+      </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS INTERACTIONS
+// ═══════════════════════════════════════════════════════════════
+canvas.addEventListener('mousedown', e => {
+  panning=true;
+  const r=canvas.getBoundingClientRect();
+  ps={x:e.clientX-r.left,y:e.clientY-r.top};
+  po={x:vx,y:vy};
+});
+canvas.addEventListener('mousemove', e => {
+  const r=canvas.getBoundingClientRect();
+  const mx=e.clientX-r.left,my=e.clientY-r.top;
+  const w=s2w(mx,my);
+  const dist=Math.sqrt(w.x**2+w.y**2);
+  const brg=((Math.atan2(w.x,w.y)*180/Math.PI)+360)%360;
+  const tip=document.getElementById('tooltip');
+  tip.style.display='block';tip.style.left=(mx+12)+'px';tip.style.top=(my+8)+'px';
+  tip.textContent=`${fmtDist(dist)}  ${brg.toFixed(1)}°V`;
+  if(panning){vx=po.x+(mx-ps.x);vy=po.y+(my-ps.y);draw();}
+});
+canvas.addEventListener('mouseup',   () => { panning=false; });
+canvas.addEventListener('mouseleave',() => { panning=false; document.getElementById('tooltip').style.display='none'; });
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=canvas.getBoundingClientRect();
+  zoom(e.deltaY<0?1.2:0.83,e.clientX-r.left,e.clientY-r.top);
+},{passive:false});
+
+function zoom(f,cx,cy){
+  if(cx===undefined){cx=canvas.width/2;cy=canvas.height/2;}
+  vx=cx-canvas.width/2+(vx-(cx-canvas.width/2))*f;
+  vy=cy-canvas.height/2+(vy-(cy-canvas.height/2))*f;
+  vs*=f;draw();
+}
+function centerView(){vx=0;vy=0;vs=1;draw();}
+
+// ═══════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════
+function showTab(name) {
+  ['os','brg','sol'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+    document.getElementById('tc-'+t).classList.toggle('active',t===name);
+  });
+  if(name==='sol') refreshSolTab();
+  if(name==='brg') refreshBearingTab();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEMO
+// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// DEMOS
+// ═══════════════════════════════════════════════════════════════
+
+// Genera marcaciones para un contacto segmentado
+// segments: [{t, crs, spd}] — cada segmento activo desde ese tiempo
+function genBrgs(cx0, cy0, segments, times) {
+  return times.map(t => {
+    let cx=cx0, cy=cy0, prevT=0;
+    for (let i=0; i<segments.length; i++) {
+      const seg   = segments[i];
+      const nextT = (i+1<segments.length) ? segments[i+1].t : t;
+      const endT  = Math.min(t, nextT);
+      if (endT <= prevT) break;
+      const dt = endT - prevT;
+      cx += Math.sin(seg.crs*Math.PI/180)*KN2MM*seg.spd*dt;
+      cy += Math.cos(seg.crs*Math.PI/180)*KN2MM*seg.spd*dt;
+      prevT = endT;
+      if (endT >= t) break;
+    }
+    const op    = osPos(t);
+    const tbDeg = ((Math.atan2(cx-op.x, cy-op.y)*180/Math.PI)+360)%360;
+    const osLeg = osAtTime(t);
+    // Guardar marcación VERDADERA (igual que addBearing con modo °V)
+    return {t, rb:parseFloat(tbDeg.toFixed(1)), osHdg:osLeg.hdg, osSpd:osLeg.spd};
+  });
+}
+
+function demoReset() {
+  contacts={};cidCounter=1;palIdx=0;activeId=null;
+  kfStates={};lsSolution=null;velInjections={};
+}
+
+function demoAddContact(id, cx0, cy0, segments, times) {
+  addContact(id);
+  genBrgs(cx0, cy0, segments, times).forEach(d => {
+    contacts[id].bearings.push({time:d.t, brg:d.rb, osHdg:d.osHdg, osSpd:d.osSpd});
+  });
+}
+
+// Posición inicial en nm: bearing verdadero, distancia
+function nmPos(brg, dist) {
+  return {
+    x: Math.sin(brg*Math.PI/180)*dist*1852,
+    y: Math.cos(brg*Math.PI/180)*dist*1852
+  };
+}
+
+function loadDemo(n) {
+  demoReset();
+  const desc = document.getElementById('demo-desc');
+  desc.style.display = '';
+
+  // Tiempos de marcación estándar
+  const T_SHORT = [0, 5, 10, 15, 20, 25];
+  const T_LONG  = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+  const T_DENSE = Array.from({length: 31}, (_, i) => i); // 0..30 cada 1 min
+
+  if (n === 1) {
+    // ── D1: Sin maniobras ─────────────────────────────────────
+    // OS: rumbo constante 3kn. Contacto: rumbo constante.
+    // Objetivo: demostrar uso básico modos A y B.
+    osLegs = [{t:0, hdg:0, spd:3}];
+    const p = nmPos(40, 10);  // aumentado a 10nm para evitar CPA muy cercano
+    demoAddContact('C1', p.x, p.y, [{t:0, crs:220, spd:12}], T_SHORT);
+    desc.innerHTML = '<b style="color:var(--green)">D1 — Sin maniobras</b><br>OS 000°/3kn · C1: 220°/12kn · RNG_0=10nm · RB_0=40°<br>Usar modo B con velocidad fija (12kn) para buena solución. Sin zig OS la geometría es insuficiente si la velocidad es libre.';
+    document.getElementById('sol-spd').value = 12;
+
+  } else if (n === 2) {
+    // ── D2: OS maniobra ───────────────────────────────────────
+    // OS vira a babor en T=15 (3kn→5kn). Contacto recto.
+    osLegs = [{t:0, hdg:0, spd:3}, {t:15, hdg:270, spd:5}];
+    const p = nmPos(35, 6);
+    demoAddContact('C1', p.x, p.y, [{t:0, crs:170, spd:14}], T_LONG);
+    desc.innerHTML = '<b style="color:var(--amber)">D2 — OS maniobra (zig)</b><br>OS 000°/3kn → 270°/5kn en T=15 · C1: 170°/14kn · RNG_0=6nm · RB_0=35°<br>Con velocidad libre (0), el zig de OS permite al modo B resolver las 3 incógnitas. Comparar calidad geométrica antes/después del zig.';
+    document.getElementById('sol-spd').value = 0;
+
+  } else if (n === 3) {
+    // ── D3: Contacto cambia rumbo ─────────────────────────────
+    // OS con zig (3kn→5kn). Contacto vira de rumbo en T=15 (vel constante).
+    osLegs = [{t:0, hdg:0, spd:3}, {t:15, hdg:270, spd:5}];
+    const p = nmPos(20, 5);
+    demoAddContact('C1', p.x, p.y, [{t:0,crs:125,spd:14},{t:15,crs:200,spd:14}], T_DENSE);
+    desc.innerHTML = '<b style="color:var(--amber)">D3 — Contacto cambia rumbo</b><br>OS 000°/3kn → 270°/5kn en T=15 · C1: 125°→200° en T=15 · vel 14kn · RNG_0=5nm · RB_0=20°<br>31 marcaciones (cada 1 min). Usar modo K → Historial completo.';
+    document.getElementById('sol-spd').value = 0;
+
+  } else if (n === 4) {
+    // ── D4: Contacto cambia velocidad ────────────────────────
+    // OS zig (3kn→5kn). Contacto mantiene rumbo pero reduce velocidad en T=15.
+    osLegs = [{t:0, hdg:0, spd:3}, {t:15, hdg:270, spd:5}];
+    const p = nmPos(55, 7);
+    demoAddContact('C1', p.x, p.y, [{t:0,crs:300,spd:16},{t:15,crs:300,spd:6}], T_LONG);
+    velInjections['C1'] = [{t:15, spd:6}];
+    desc.innerHTML = '<b style="color:var(--amber)">D4 — Contacto cambia velocidad</b><br>OS 000°/3kn → 270°/5kn en T=15 · C1: 300°/16kn → 300°/6kn en T=15 · RNG_0=7nm · RB_0=55°<br>Probar modo K sin inyección, luego activar inyección T15→6kn. Observar cómo el track mejora.';
+    document.getElementById('sol-spd').value = 0;
+
+  } else if (n === 5) {
+    // ── D5: Contacto cambia rumbo y velocidad ────────────────
+    // OS zig (3kn→5kn). Contacto vira y reduce velocidad simultáneamente.
+    osLegs = [{t:0, hdg:0, spd:3}, {t:15, hdg:270, spd:5}];
+    const p = nmPos(20, 5);
+    demoAddContact('C1', p.x, p.y, [{t:0,crs:125,spd:14},{t:15,crs:200,spd:8}], T_LONG);
+    velInjections['C1'] = [{t:15, spd:8}];
+    desc.innerHTML = '<b style="color:var(--amber)">D5 — Contacto cambia rumbo y velocidad</b><br>OS 000°/3kn → 270°/5kn en T=15 · C1: 125°/14kn → 200°/8kn en T=15 · RNG_0=5nm · RB_0=20°<br>Modo K con inyección T15→8kn. IMM detecta el cambio de rumbo; la inyección ancla la velocidad post-maniobra.';
+    document.getElementById('sol-spd').value = 0;
+
+  } else if (n === 6) {
+    // ── D6: Multi-contacto ───────────────────────────────────
+    // OS zig (3kn→5kn). Tres contactos con comportamientos distintos.
+    osLegs = [{t:0, hdg:0, spd:3}, {t:15, hdg:270, spd:5}];
+    const p1 = nmPos(30, 6);
+    const p2 = nmPos(10, 8);
+    const p3 = nmPos(60, 6);  // aumentado a 6nm — C3 llegaba a 1.75nm (muy cerca)
+    demoAddContact('C1', p1.x, p1.y, [{t:0,crs:200,spd:10}], T_LONG);
+    demoAddContact('C2', p2.x, p2.y, [{t:0,crs:090,spd:12},{t:15,crs:150,spd:12}], T_LONG);
+    demoAddContact('C3', p3.x, p3.y, [{t:0,crs:270,spd:15},{t:18,crs:270,spd:7}], T_LONG);
+    velInjections['C3'] = [{t:18, spd:7}];
+    desc.innerHTML = '<b style="color:var(--blue)">D6 — Multi-contacto</b><br>OS 000°/3kn → 270°/5kn en T=15 · C1: 200°/10kn · C2: 090°→150° en T=15 · C3: 270°/15kn→7kn en T=18<br>Usar botones C1/C2/C3 para mostrar/ocultar. Seleccionar cada uno en modo K. C3 tiene inyección de velocidad precargada.';
+    document.getElementById('sol-spd').value = 0;
+  }
+
+  renderOSList();
+  selectContact('C1');
+  renderVelInjList();
+  renderVisPanel();
+  // Correr IMM background para todos los contactos del demo
+  setTimeout(() => { runImmBackgroundAll(); }, 50);
+  showTab('sol');
+  setSolMode('S');
+  document.getElementById('btn-apply-ls').style.display = 'none';
+  updateGeomIndicator();
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+  // Modo S — nudges de rumbo con flechas (cuando ajuste fino está visible)
+  if(solMode==='S' && document.getElementById('sol-manual-adj').style.display !== 'none') {
+    if(e.key==='ArrowLeft' ||e.key==='a') nudge(-1);
+    if(e.key==='ArrowRight'||e.key==='d') nudge(+1);
+    if(e.key==='ArrowUp')   nudge(-0.1);
+    if(e.key==='ArrowDown') nudge(+0.1);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+const M2NM = 1/1852;
+function fmtDist(m){
+  if (m === undefined || m === null || isNaN(m)) return '—';
+  const nm=m*M2NM;
+  if(nm>=10)  return nm.toFixed(1)+' nm';
+  if(nm>=0.1) return nm.toFixed(2)+' nm';
+  return m.toFixed(0)+'m';
+}
+function fmtCrs(c){
+  if (c === undefined || c === null || isNaN(c)) return '—°V';
+  return c.toFixed(1).padStart(5,'0')+'°V';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SISTEMA DE SESIÓN Y TIEMPO MM:SS
+// ═══════════════════════════════════════════════════════════════
+let sessionT0 = null;       // Date cuando se inició la sesión
+let sessionTimer = null;    // setInterval del contador
+let brgNowActive = false;   // Toggle AHORA en marcación
+let osNowActive  = false;   // Toggle AHORA en ownship
+let brgModeRel   = false;   // false=verdadero °V (defecto), true=relativo °R
+
+function toggleBrgMode() {
+  brgModeRel = !brgModeRel;
+  const btn = document.getElementById('btn-brg-mode');
+  const lbl = document.getElementById('brg-mode-label');
+  if (brgModeRel) {
+    btn.textContent = '°R'; btn.style.borderColor = 'var(--amber)'; btn.style.color = 'var(--amber)';
+    lbl.textContent = 'MARCACIÓN °R';
+  } else {
+    btn.textContent = '°V'; btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)';
+    lbl.textContent = 'MARCACIÓN °V';
+  }
+}
+
+// Convertir minutos decimales → "MM:SS"
+function minToMMSS(min) {
+  if (min === undefined || min === null || isNaN(min) || min < 0) return '00:00';
+  const totalSec = Math.round(min * 60);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// Convertir "MM:SS" (o "MM" o número) → minutos decimales
+function mmssToMin(str) {
+  if (str === null || str === undefined) return NaN;
+  str = String(str).trim();
+  // Formato MM:SS
+  if (/^\d+:\d{1,2}$/.test(str)) {
+    const parts = str.split(':');
+    return parseInt(parts[0]) + parseInt(parts[1]) / 60;
+  }
+  // Número puro → asumimos que ya son minutos decimales (compatibilidad demos)
+  const n = parseFloat(str);
+  return isNaN(n) ? NaN : n;
+}
+
+// Retorna minutos desde T0 de sesión en este momento
+function nowMinutes() {
+  if (!sessionT0) return 0;
+  return (Date.now() - sessionT0) / 60000;
+}
+
+function toggleBrgNow() {
+  if (!sessionT0) return;
+  brgNowActive = !brgNowActive;
+  const btn    = document.getElementById('btn-brg-now-toggle');
+  const hint   = document.getElementById('brg-now-hint');
+  const tInput = document.getElementById('b-t');
+  if (brgNowActive) {
+    btn.classList.add('now-active');
+    hint.style.display = '';
+    tInput.disabled = true;
+    tInput.style.opacity = '0.4';
+    tInput.value = minToMMSS(nowMinutes());
+    onBrgTimeInput();
+  } else {
+    btn.classList.remove('now-active');
+    hint.style.display = 'none';
+    tInput.disabled = false;
+    tInput.style.opacity = '';
+  }
+}
+
+function toggleOsNow() {
+  if (!sessionT0) return;
+  osNowActive = !osNowActive;
+  const btn    = document.getElementById('btn-os-now-toggle');
+  const hint   = document.getElementById('os-now-hint');
+  const tInput = document.getElementById('os-t');
+  if (osNowActive) {
+    btn.classList.add('now-active');
+    hint.style.display = '';
+    tInput.disabled = true;
+    tInput.style.opacity = '0.4';
+    tInput.value = minToMMSS(nowMinutes());
+  } else {
+    btn.classList.remove('now-active');
+    hint.style.display = 'none';
+    tInput.disabled = false;
+    tInput.style.opacity = '';
+  }
+}
+
+function tickSession() {
+  if (!sessionT0) return;
+  const elapsed = nowMinutes();
+  const el = document.getElementById('session-elapsed');
+  if (el) el.textContent = minToMMSS(elapsed);
+  // Actualizar campos de tiempo en vivo si toggle activo
+  if (brgNowActive) {
+    const tInput = document.getElementById('b-t');
+    if (tInput) { tInput.value = minToMMSS(elapsed); onBrgTimeInput(); }
+  }
+  if (osNowActive) {
+    const tInput = document.getElementById('os-t');
+    if (tInput) tInput.value = minToMMSS(elapsed);
+  }
+}
+
+function markNow() {
+  if (!sessionT0) return;
+  document.getElementById('b-t').value = minToMMSS(nowMinutes());
+  onBrgTimeInput();
+  document.getElementById('b-v').focus();
+}
+
+// Llamado al cambiar el input de tiempo de marcación
+function onBrgTimeInput() {
+  const raw = document.getElementById('b-t').value;
+  const tMin = mmssToMin(raw);
+  if (isNaN(tMin) || !contacts[activeId]) return;
+  const leg = osAtTime(tMin);
+  document.getElementById('os-at-t').textContent =
+    `OS en T=${minToMMSS(tMin)} (${tMin.toFixed(2)}min): ${String(leg.hdg).padStart(3,'0')}°V / ${leg.spd}kn`;
+}
+
+// Clock UTC
+setInterval(()=>{
+  const n = new Date();
+  const pad = v => String(v).padStart(2,'0');
+  document.getElementById('clock').textContent =
+    pad(n.getUTCHours())+':'+pad(n.getUTCMinutes())+':'+pad(n.getUTCSeconds())+'Z';
+  document.getElementById('clock-local').textContent =
+    pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds())+'L';
+  if (sessionT0) tickSession();
+}, 1000);
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+// Sesión arranca automáticamente al cargar
+sessionT0 = Date.now();
+document.getElementById('btn-brg-now-toggle').disabled = false;
+document.getElementById('btn-os-now-toggle').disabled  = false;
+sessionTimer = setInterval(tickSession, 1000);
+
+// AHORA activo por defecto en ambos paneles
+toggleBrgNow();
+toggleOsNow();
+
+renderOSList();
+refreshContactSelectors();
+resize();
+renderVisPanel();
+
+// Event delegation — botones ✕ en listas dinámicas
+document.getElementById('blist').addEventListener('click', e => {
+  const el = e.target.closest('[data-idx]');
+  if (el) { e.stopPropagation(); deleteBearing(parseInt(el.dataset.idx)); }
+});
+document.getElementById('os-list').addEventListener('click', e => {
+  const el = e.target.closest('[data-t]');
+  if (el) { e.stopPropagation(); deleteOSLeg(parseFloat(el.dataset.t)); }
+});
+// DEBUG — captura errores con stack trace completo
+window.addEventListener('error', e => {
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a0000;color:#ff6666;font-family:monospace;font-size:11px;padding:8px;z-index:9999;white-space:pre-wrap;max-height:200px;overflow:auto;border-top:2px solid red;';
+  div.textContent = '❌ ' + e.message + '\n' + (e.error?.stack || '(sin stack)');
+  document.body.appendChild(div);
+});
+</script>
+</body>
+</html>
