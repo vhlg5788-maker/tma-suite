@@ -1592,6 +1592,13 @@ function immRunHistory(brs, q, R) {
 }
 
 // Analiza el historial IMM — detecta maniobras por cambio sostenido en turnW
+// Retorna true si el tiempo t coincide con un cambio de pierna de OS
+// (dentro de una ventana de tolerancia en minutos)
+function isOSManeuverTime(t, toleranceMin = 2.0) {
+  // La primera pierna (t=0) no es un cambio — se ignora
+  return osLegs.slice(1).some(leg => Math.abs(leg.t - t) <= toleranceMin);
+}
+
 function immAnalyzeManeuver(imm) {
   if (!imm || !imm.weightHist || imm.weightHist.length < 4) return null;
   const wh = imm.weightHist;
@@ -1601,6 +1608,9 @@ function immAnalyzeManeuver(imm) {
   // ── Camino 1: smoother retrospectivo ya calculó todo ────────────
   if (imm._tManRetro !== undefined) {
     const tMan  = imm._tManRetro;
+
+    // Suprimir si el tiempo de maniobra coincide con un cambio de pierna de OS
+    if (isOSManeuverTime(tMan)) return { detected: false };
     const crsBefore = imm._preSegCrs  !== undefined ? imm._preSegCrs  : 0;
     const crsAfter  = imm._postSegCrs !== undefined ? imm._postSegCrs : 0;
     const spdBefore = imm._preSegSpd  !== undefined ? imm._preSegSpd  : 10;
@@ -1645,7 +1655,10 @@ function immAnalyzeManeuver(imm) {
     const rise     = tw[i]   - baseW;
     const nextRise = tw[i+1] - baseW;
     if (rise >= RISE_THRESH && nextRise >= RISE_THRESH - 0.03 && i - lastIdx >= MIN_GAP) {
-      maneuvers.push({ idx: i, jump: rise, t: wh[i].t });
+      // Suprimir si coincide con maniobra de OS
+      if (!isOSManeuverTime(wh[i].t)) {
+        maneuvers.push({ idx: i, jump: rise, t: wh[i].t });
+      }
       lastIdx = i;
     }
   }
@@ -2349,8 +2362,8 @@ function runLS() {
       const spdListLS = spdFixed ? [spdInput]
         : Array.from({ length: spdSteps }, (_, i) => spdMin + (spdMax - spdMin) * i / (spdSteps - 1));
 
-      // Función de rango con escala log
-      const rngListLS = Array.from({ length: rngSteps }, (_, i) => rngAt(i));
+      // Función de rango con escala log — calculada internamente por lsGridSearch
+      // (rngListLS eliminado: lsGridSearch recibe rngMin/rngMax directamente)
 
       const allResults = lsGridSearch(
         obj,
